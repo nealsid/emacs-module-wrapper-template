@@ -13,13 +13,23 @@
 using namespace std;
 using namespace std::placeholders;
 
-// Alias for functions in which the first parameter is emacs_env*
+// Aliases for the user-defined function meant to be called into from
+// emacs.  The function is curried parameter-by-parameter, with
+// corresponding validation code generated for the parameter, and the
+// corresponding wrapper template function is generated based on
+// matching the first parameter type.
+
+// Alias for functions in which the first parameter is emacs_env*.
 template<typename... Args>
 using first_parameter_emacs_env = std::function<emacs_value(emacs_env*, Args...)>;
 
-// Alias for functions in which the first parameter is const std::string&
+// Alias for functions in which the first parameter is const std::string&.
 template<typename... Args>
 using first_parameter_string = std::function<emacs_value(const std::string&, Args...)>;
+
+// Alias for functions in which the first parameter is int.
+template<typename... Args>
+using first_parameter_int = std::function<emacs_value(int, Args...)>;
 
 // Alias for type of function that Emacs can call into from Elisp.
 using emacs_function_type = emacs_value(emacs_env*, ptrdiff_t, emacs_value*, void*);
