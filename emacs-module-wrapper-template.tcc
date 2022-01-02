@@ -20,6 +20,9 @@ using namespace std;
 // corresponding wrapper template function is generated based on
 // matching the first parameter type.
 
+template<typename FirstParam, typename... Args>
+using user_function = std::function<emacs_value(FirstParam, Args...)>;
+
 // Alias for functions in which the first parameter is emacs_env*.
 template<typename... Args>
 using first_parameter_emacs_env = std::function<emacs_value(emacs_env*, Args...)>;
@@ -35,31 +38,23 @@ using first_parameter_int = std::function<emacs_value(int, Args...)>;
 // Alias for function signature that Emacs knows how to call into.
 using emacs_function = emacs_value(emacs_env*, ptrdiff_t, emacs_value*, void*);
 
-template<typename... Args>
-std::optional<std::function<emacs_function>>
-createFunctionWrapperForEmacs(first_parameter_emacs_env<Args...> func,
-                              int argNumber) {
-  cout << "Currying emacs_env" << endl;
-  auto l = [func, argNumber] (emacs_env* env, ptrdiff_t nargs, emacs_value* args, void* data) -> emacs_value  {
-    if (env == nullptr) {
-      cout << "Emacs_env was invalid" << endl;
-      //      return nullptr;
-    }
-    std::function<emacs_value(Args...)> f = varargs_bind<decltype(func), emacs_env*, sizeof...(Args)>(func, env);
-    return createFunctionWrapperForEmacs(f, argNumber + 1).value()(env, nargs, args, data);
-  };
-  return l;
+template<typename Param>
+auto validate(emacs_env*, emacs_value arg) -> std::optional<Param>;
+
+template<>
+auto validate(emacs_env* env, emacs_value arg) -> std::optional<emacs_env*> {
+  if (env != nullptr) {
+    return env;
+  } else {
+    return nullopt;
+  }
 }
 
-template<typename... Args>
-std::optional<std::function<emacs_function>>
-createFunctionWrapperForEmacs(first_parameter_string<Args...> func,
-                              int argNumber) {
-  cout << "hello, emacs 1st param string!" << endl;
-  std::function<emacs_function> f = [argNumber, func] (emacs_env* env, ptrdiff_t nargs, emacs_value* args, void* data) -> emacs_value {
+template<>
+auto validate(emacs_env* env, emacs_value arg) -> std::optional<const std::string> {
     ptrdiff_t string_length;
     char* argument = NULL;
-    bool ret = env->copy_string_contents(env, args[argNumber], NULL, &string_length);
+    bool ret = env->copy_string_contents(env, arg, NULL, &string_length);
     if (!ret) {
       return nullptr;
     }
@@ -69,18 +64,87 @@ createFunctionWrapperForEmacs(first_parameter_string<Args...> func,
       return nullptr;
     }
 
-    ret = env->copy_string_contents(env, args[argNumber], argument, &string_length);
+    ret = env->copy_string_contents(env, arg, argument, &string_length);
 
     if (!ret) {
       free(argument);
       return nullptr;
     }
-    std::function<emacs_value(Args...)> curried = varargs_bind<decltype(func), const std::string&, sizeof...(Args)>(func, argument);
-    return createFunctionWrapperForEmacs(curried, argNumber + 1).value()(env, nargs, args, data);
-  };
-
-  return f;
+    return argument;
 }
+
+// Overload for reference parameter types which removes the reference.
+template<typename FirstParam, typename... Args>
+auto createFunctionWrapperForEmacs(user_function<FirstParam&, Args...> func,
+                                   int argNumber) -> std::optional<std::function<emacs_function>> {
+  return createFunctionWrapperForEmacs((user_function<FirstParam, Args...>) func,
+                                       argNumber);
+}
+
+template<typename FirstParam, typename... Args>
+auto createFunctionWrapperForEmacs(user_function<FirstParam, Args...> func,
+                              int argNumber) -> std::optional<std::function<emacs_function>> {
+  cout << "Currying parameter " << argNumber << endl;
+  auto l = [func, argNumber] (emacs_env* env, ptrdiff_t nargs, emacs_value* args, void* data) -> emacs_value  {
+    std::optional<FirstParam> parameterValue = validate<FirstParam>(env, args[argNumber]);
+    if (parameterValue) {
+      std::function<emacs_value(Args...)> f =
+        varargs_bind<decltype(func), FirstParam, sizeof...(Args)>(func, parameterValue.value());
+      return createFunctionWrapperForEmacs(f, argNumber + 1).value()(env, nargs, args, data);
+    } else {
+      cout << "Parameter " << argNumber << endl;
+      return env->intern(env, "nil");
+    }
+  };
+  return l;
+}
+
+// template<typename... Args>
+// std::optional<std::function<emacs_function>>
+// createFunctionWrapperForEmacs(first_parameter_emacs_env<Args...> func,
+//                               int argNumber) {
+//   cout << "Currying emacs_env" << endl;
+//   auto l = [func, argNumber] (emacs_env* env, ptrdiff_t nargs, emacs_value* args, void* data) -> emacs_value  {
+//     if (env == nullptr) {
+//       cout << "Emacs_env was invalid" << endl;
+//       //      return nullptr;
+//     }
+//     std::function<emacs_value(Args...)> f = varargs_bind<decltype(func), emacs_env*, sizeof...(Args)>(func, env);
+//     return createFunctionWrapperForEmacs(f, argNumber + 1).value()(env, nargs, args, data);
+//   };
+//   return l;
+// }
+
+// template<typename... Args>
+// std::optional<std::function<emacs_function>>
+// createFunctionWrapperForEmacs(first_parameter_string<Args...> func,
+//                               int argNumber) {
+//   cout << "hello, emacs 1st param string!" << endl;
+//   std::function<emacs_function> f = [argNumber, func] (emacs_env* env, ptrdiff_t nargs, emacs_value* args, void* data) -> emacs_value {
+//     ptrdiff_t string_length;
+//     char* argument = NULL;
+//     bool ret = env->copy_string_contents(env, args[argNumber], NULL, &string_length);
+//     if (!ret) {
+//       return nullptr;
+//     }
+//     argument = (char *)malloc(string_length);
+
+//     if (!argument) {
+//       return nullptr;
+//     }
+
+//     ret = env->copy_string_contents(env, args[argNumber], argument, &string_length);
+
+//     if (!ret) {
+//       free(argument);
+//       return nullptr;
+//     }
+//     std::function<emacs_value(Args...)> curried = varargs_bind<decltype(func), const std::string&, sizeof...(Args)>(func, argument);
+//     return createFunctionWrapperForEmacs(curried, argNumber + 1).value()(env, nargs, args, data);
+//   };
+
+//   return f;
+// }
 
 std::optional<std::function<emacs_function>>
 createFunctionWrapperForEmacs(std::function<emacs_value()> func, int argNumber) {
