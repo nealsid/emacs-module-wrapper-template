@@ -43,7 +43,7 @@ createFunctionWrapperForEmacs(first_parameter_emacs_env<Args...> func) {
     if (env == nullptr) {
       cout << "Emacs_env was invalid" << endl;
     }
-    std::function<emacs_value(Args...)> f = varargs_bind(func, env, make_int_sequence<sizeof...(Args)>{});
+    std::function<emacs_value(Args...)> f = varargs_bind<decltype(func), sizeof...(Args)>(func, env);
     return createFunctionWrapperForEmacs(f)(env, nargs, args, data);
   };
   return l;
