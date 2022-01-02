@@ -11,5 +11,5 @@ emacs_value func1(emacs_env* env, emacs_env* env1, emacs_env* env2, emacs_env* e
 }
 
 int main(int argc, char* argv[]) {
-  createFunctionWrapperForEmacs(std::function<emacs_value(emacs_env*, emacs_env*, emacs_env*, emacs_env*)>(func1))(nullptr, 3, nullptr, nullptr);
+  createFunctionWrapperForEmacs(std::function<emacs_value(emacs_env*, emacs_env*, emacs_env*, emacs_env*)>(func1), 0)(nullptr, 3, nullptr, nullptr);
 }
