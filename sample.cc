@@ -1,6 +1,6 @@
 #include "emacs-module-wrapper-template.tcc"
 
-emacs_value func1(emacs_env* env, emacs_env* env1, emacs_env* env2, emacs_env* env3) {
+emacs_value func1(emacs_env* env, const std::string& s) {
   cout << "Func1" << endl;
   if (!env) {
     cout << "emacs env is null" << endl;
@@ -11,5 +11,5 @@ emacs_value func1(emacs_env* env, emacs_env* env1, emacs_env* env2, emacs_env* e
 }
 
 int main(int argc, char* argv[]) {
-  createFunctionWrapperForEmacs(std::function<emacs_value(emacs_env*, emacs_env*, emacs_env*, emacs_env*)>(func1), 0)(nullptr, 3, nullptr, nullptr);
+  createFunctionWrapperForEmacs(std::function<emacs_value(emacs_env*, const std::string&)>(func1), 0).value()(nullptr, 3, nullptr, nullptr);
 }

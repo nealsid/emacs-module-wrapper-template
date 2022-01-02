@@ -47,12 +47,12 @@ struct make_int_sequence<0, Sequence...> : integer_sequence<int, Sequence...> {}
 
 // Template to generate a call to std::bind with a number of
 // placeholders from the size of a parameter pack.
-template<typename Callable, int N>
-auto varargs_bind(Callable c, emacs_env* env) {
-  return varargs_bind(c, env, make_int_sequence<N>{});
+template<typename Callable, typename Param, int N>
+auto varargs_bind(Callable c, Param p) {
+  return varargs_bind(c, p, make_int_sequence<N>{});
 }
 
-template<typename Callable, int... Is>
-auto varargs_bind(Callable c, emacs_env* env, integer_sequence<int, Is...>) {
-  return std::bind(c, env, bind_placeholder<Is>{}...);
+template<typename Callable, typename Param, int... Is>
+auto varargs_bind(Callable c, Param p, integer_sequence<int, Is...>) {
+  return std::bind(c, p, bind_placeholder<Is>{}...);
 }
