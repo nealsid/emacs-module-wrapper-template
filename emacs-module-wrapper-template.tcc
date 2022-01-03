@@ -23,20 +23,8 @@ using namespace std;
 template<typename FirstParam, typename... Args>
 using user_function = std::function<emacs_value(FirstParam, Args...)>;
 
-// Alias for functions in which the first parameter is emacs_env*.
-template<typename... Args>
-using first_parameter_emacs_env = std::function<emacs_value(emacs_env*, Args...)>;
-
-// Alias for functions in which the first parameter is const std::string&.
-template<typename... Args>
-using first_parameter_string = std::function<emacs_value(const std::string&, Args...)>;
-
-// Alias for functions in which the first parameter is int.
-template<typename... Args>
-using first_parameter_int = std::function<emacs_value(int, Args...)>;
-
 // Alias for function signature that Emacs knows how to call into.
-using emacs_function = emacs_value(emacs_env*, ptrdiff_t, emacs_value*, void*);
+using emacs_function = std::function<emacs_value(emacs_env*, ptrdiff_t, emacs_value*, void*) noexcept>;
 
 template<typename Param>
 auto validate(emacs_env*, emacs_value arg) -> std::optional<Param>;
@@ -51,7 +39,7 @@ auto validate(emacs_env* env, emacs_value arg) -> std::optional<emacs_env*> {
 }
 
 template<>
-auto validate(emacs_env* env, emacs_value arg) -> std::optional<const std::string> {
+auto validate(emacs_env* env, emacs_value arg) -> std::optional<std::string> {
     ptrdiff_t string_length;
     char* argument = NULL;
     bool ret = env->copy_string_contents(env, arg, NULL, &string_length);
@@ -153,4 +141,12 @@ createFunctionWrapperForEmacs(std::function<emacs_value()> func, int argNumber) 
     return func();
   };
   return l;
+}
+
+typedef emacs_value (*ev)(emacs_env*, ptrdiff_t, emacs_value*, void*);
+template<std::function<emacs_function>& f>
+ev createCPointerTemplateFunction() {
+  return [] (emacs_env* env, ptrdiff_t nargs, emacs_value* args, void* data) {
+    return f(env, nargs, args, data);
+  };
 }
