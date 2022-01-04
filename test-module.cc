@@ -16,7 +16,7 @@ int emacs_module_init(struct emacs_runtime *runtime) noexcept {
   emacs_value func = env->make_function(env,
                                         1,
                                         1,
-                                        createCPointerTemplateFunction<l>(), 0)>,
+                                        createCPointerTemplateFunction<&l>()>,
                                         "Test function",
                                         nullptr);
   emacs_value symbol = env->intern(env, "emwt-lisp-callable");

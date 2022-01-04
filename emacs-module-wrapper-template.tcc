@@ -20,11 +20,11 @@ using namespace std;
 // corresponding wrapper template function is generated based on
 // matching the first parameter type.
 
-template<typename FirstParam, typename... Args>
-using user_function = std::function<emacs_value(FirstParam, Args...)>;
+template<typename... Args>
+using user_function = std::function<emacs_value(Args...)>;
 
 // Alias for function signature that Emacs knows how to call into.
-using emacs_function = emacs_value (*)(emacs_env*, ptrdiff_t, emacs_value*, void*);
+using emacs_function = emacs_value(emacs_env*, ptrdiff_t, emacs_value*, void*);
 
 template<typename Param>
 auto validate(emacs_env*, emacs_value arg) -> std::optional<Param>;
@@ -70,8 +70,8 @@ auto validate(emacs_env* env, emacs_value arg) -> std::optional<std::string> {
 // }
 
 template<typename FirstParam, typename... Args>
-constexpr auto createFunctionWrapperForEmacs(user_function<FirstParam, Args...> func,
-                              int argNumber) -> emacs_function {
+auto createFunctionWrapperForEmacs(user_function<FirstParam, Args...> func,
+				   int argNumber) -> std::function<emacs_function> {
   cout << "Currying parameter " << argNumber << endl;
   auto l = [func, argNumber] (emacs_env* env, ptrdiff_t nargs, emacs_value* args, void* data) -> emacs_value  {
     std::optional<FirstParam> parameterValue = validate<FirstParam>(env, args[argNumber]);
@@ -87,24 +87,23 @@ constexpr auto createFunctionWrapperForEmacs(user_function<FirstParam, Args...> 
   return l;
 }
 
-template<>
-constexpr auto createFunctionWrapperForEmacs(std::function<emacs_value()> func, int argNumber) -> std::function<emacs_function> {
+auto createFunctionWrapperForEmacs(std::function<emacs_value()> func, int argNumber) -> std::function<emacs_function> {
   cout << "Final function generation" << endl;
-  auto l = [] (emacs_env* env, ptrdiff_t nargs, emacs_value* args, void* data) {
-	     return createEmacsFunction<func>(env, nargs, args, data)();
-	   }
+  auto l = [func] (emacs_env* env, ptrdiff_t nargs, emacs_value* args, void* data) {
+	     return func();
+	   };
   return l;
 }
 
-template<Callable f>
-emacs_value createEmacsFunction(emacs_env* env, ptrdiff_t nargs, emacs_value* args, void* data) {
-  f(env, nargs, args, data);
-}
+// template<Callable f>
+// emacs_value createEmacsFunction(emacs_env* env, ptrdiff_t nargs, emacs_value* args, void* data) {
+//   f(env, nargs, args, data);
+// }
 
 typedef emacs_value (*ev)(emacs_env*, ptrdiff_t, emacs_value*, void*);
-template<std::function<emacs_function>& f>
+template<std::function<emacs_function>* f>
 ev createCPointerTemplateFunction() {
   return [] (emacs_env* env, ptrdiff_t nargs, emacs_value* args, void* data) {
-    return f(env, nargs, args, data);
+	   return (*f)(env, nargs, args, data);
   };
 }
