@@ -1,5 +1,6 @@
 #include "emacs-module-wrapper-template.tcc"
 #include <emacs-module.h>
+#include <iostream>
 
 using namespace std;
 
@@ -7,16 +8,33 @@ int plugin_is_GPL_compatible;
 
 int register_elisp_functions();
 
-emacs_value lisp_callable(emacs_env* env, const string s);
+emacs_value lisp_callable(emacs_env* env, const string s) {
+  cout << s << endl;
+  return env->intern(env, "nil");
+}
+
+template<typename T>
+class TD;
+
+emacs_env_27 e;
 
 int emacs_module_init(struct emacs_runtime *runtime) noexcept {
   emacs_env* env = runtime->get_environment(runtime);
   auto l =
-    createFunctionWrapperForEmacs(std::function<emacs_value(emacs_env*, const string)>(lisp_callable), 0);
+    std::function<emacs_function>(createFunctionWrapperForEmacs(std::function<emacs_value(emacs_env*, const string)>(lisp_callable), 0));
+  cout << l.target_type().name() << endl;
+
+  if (!l.target<emacs_value(emacs_env*, ptrdiff_t, emacs_value*, void*)>()) {
+    cout << "Could not get function pointer for user function" << endl;
+    emacs_value ev[10];
+    l(&e, 10, ev, nullptr);
+    abort();
+  }
   emacs_value func = env->make_function(env,
                                         1,
                                         1,
-                                        createCPointerTemplateFunction<&l>()>,
+                                        (emacs_value(*)(emacs_env*, ptrdiff_t, emacs_value*, void*) noexcept)
+                                        (l.target<emacs_value(emacs_env*, ptrdiff_t, emacs_value*, void*)>()),
                                         "Test function",
                                         nullptr);
   emacs_value symbol = env->intern(env, "emwt-lisp-callable");

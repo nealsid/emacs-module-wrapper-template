@@ -31,6 +31,7 @@ auto validate(emacs_env*, emacs_value arg) -> std::optional<Param>;
 
 template<>
 auto validate(emacs_env* env, emacs_value arg) -> std::optional<emacs_env*> {
+  cout << "Validating emacs_env" << endl;
   if (env != nullptr) {
     return env;
   } else {
@@ -40,25 +41,26 @@ auto validate(emacs_env* env, emacs_value arg) -> std::optional<emacs_env*> {
 
 template<>
 auto validate(emacs_env* env, emacs_value arg) -> std::optional<std::string> {
-    ptrdiff_t string_length;
-    char* argument = NULL;
-    bool ret = env->copy_string_contents(env, arg, NULL, &string_length);
-    if (!ret) {
-      return nullptr;
-    }
-    argument = (char *)malloc(string_length);
+  cout << "Validating string" << endl;
+  ptrdiff_t string_length;
+  char* argument = NULL;
+  bool ret = env->copy_string_contents(env, arg, NULL, &string_length);
+  if (!ret) {
+    return nullptr;
+  }
+  argument = (char *)malloc(string_length);
 
-    if (!argument) {
-      return nullptr;
-    }
+  if (!argument) {
+    return nullptr;
+  }
 
-    ret = env->copy_string_contents(env, arg, argument, &string_length);
+  ret = env->copy_string_contents(env, arg, argument, &string_length);
 
-    if (!ret) {
-      free(argument);
-      return nullptr;
-    }
-    return argument;
+  if (!ret) {
+    free(argument);
+    return nullptr;
+  }
+  return argument;
 }
 
 // // Overload for reference parameter types which removes the reference.
@@ -71,25 +73,29 @@ auto validate(emacs_env* env, emacs_value arg) -> std::optional<std::string> {
 
 template<typename FirstParam, typename... Args>
 auto createFunctionWrapperForEmacs(user_function<FirstParam, Args...> func,
-				   int argNumber) -> std::function<emacs_function> {
+				   int argNumber) -> std::function<emacs_value(emacs_env*, ptrdiff_t, emacs_value*, void*)> {
   cout << "Currying parameter " << argNumber << endl;
-  auto l = [func, argNumber] (emacs_env* env, ptrdiff_t nargs, emacs_value* args, void* data) -> emacs_value  {
+  auto l = [func, argNumber] (emacs_env* env, ptrdiff_t nargs, emacs_value* args, void* data) -> emacs_value {
     std::optional<FirstParam> parameterValue = validate<FirstParam>(env, args[argNumber]);
     if (parameterValue) {
       std::function<emacs_value(Args...)> f =
         varargs_bind<decltype(func), FirstParam, sizeof...(Args)>(func, parameterValue.value());
-      return createFunctionWrapperForEmacs(f, argNumber + 1).value()(env, nargs, args, data);
+      return createFunctionWrapperForEmacs(f, argNumber + 1)(env, nargs, args, data);
     } else {
       cout << "Parameter " << argNumber << endl;
       return env->intern(env, "nil");
     }
   };
+  std::function<emacs_function> f(l);
+  cout << f.target_type().name() << endl;
+
   return l;
 }
 
-auto createFunctionWrapperForEmacs(std::function<emacs_value()> func, int argNumber) -> std::function<emacs_function> {
+auto createFunctionWrapperForEmacs(std::function<emacs_value()> func,
+                                   int argNumber) -> std::function<emacs_value(emacs_env*, ptrdiff_t, emacs_value*, void*)> {
   cout << "Final function generation" << endl;
-  auto l = [func] (emacs_env* env, ptrdiff_t nargs, emacs_value* args, void* data) {
+  auto l = [func] (emacs_env* env, ptrdiff_t nargs, emacs_value* args, void* data) -> emacs_value {
 	     return func();
 	   };
   return l;
@@ -101,7 +107,7 @@ auto createFunctionWrapperForEmacs(std::function<emacs_value()> func, int argNum
 // }
 
 typedef emacs_value (*ev)(emacs_env*, ptrdiff_t, emacs_value*, void*);
-template<std::function<emacs_function>* f>
+template<std::function<emacs_value(emacs_env*, ptrdiff_t, emacs_value*, void*)>* f>
 ev createCPointerTemplateFunction() {
   return [] (emacs_env* env, ptrdiff_t nargs, emacs_value* args, void* data) {
 	   return (*f)(env, nargs, args, data);
