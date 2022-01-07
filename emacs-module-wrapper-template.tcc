@@ -21,7 +21,7 @@ using namespace std;
 // matching the first parameter type.
 
 template<typename... Args>
-using user_function = std::function<emacs_value(Args...)>;
+using user_function = emacs_value(Args...);
 
 // Alias for function signature that Emacs knows how to call into.
 using emacs_function = emacs_value(emacs_env*, ptrdiff_t, emacs_value*, void*);
