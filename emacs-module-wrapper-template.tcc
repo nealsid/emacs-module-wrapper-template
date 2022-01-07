@@ -71,6 +71,18 @@ auto validate(emacs_env* env, emacs_value arg) -> std::optional<std::string> {
 //                                        argNumber);
 // }
 
+template<typename R, typename... Args>
+auto wrapElispCallable(R (*Function)(Args...)) {
+  return
+    [] (emacs_env *, int nargs, emacs_value* args, void* data) -> emacs_value {
+      int argNumber = 0;
+      std::tuple<Args...> unpackedArgs
+	{
+	 validate<Args>(env, args[argNumber++]) ...
+	};
+    }
+}
+
 template<typename FirstParam, typename... Args>
 auto createFunctionWrapperForEmacs(user_function<FirstParam, Args...> func,
 				   int argNumber) -> std::function<emacs_value(emacs_env*, ptrdiff_t, emacs_value*, void*)> {
