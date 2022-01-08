@@ -14,17 +14,11 @@
 
 using namespace std;
 
-// Aliases for the user-defined function meant to be called into from
-// emacs.  The function is curried parameter-by-parameter, with
-// corresponding validation code generated for the parameter, and the
-// corresponding wrapper template function is generated based on
-// matching the first parameter type.
+// Alias for function signature that Emacs knows how to call into.
+using emacs_function = emacs_value (*)(emacs_env*, ptrdiff_t, emacs_value*, void*) noexcept;
 
 template<typename... Args>
-using user_function = std::function<emacs_value(Args...)>;
-
-// Alias for function signature that Emacs knows how to call into.
-using emacs_function = emacs_value(emacs_env*, ptrdiff_t, emacs_value*, void*);
+using lisp_callable_type = emacs_value (*)(Args...);
 
 template<typename Param>
 auto validate(emacs_env*, emacs_value arg) -> std::optional<Param>;
@@ -70,22 +64,34 @@ auto validate(emacs_env* env, emacs_value arg) -> std::optional<std::string> {
 //   return createFunctionWrapperForEmacs((user_function<FirstParam, Args...>) func,
 //                                        argNumber);
 // }
-template<emacs_function eFn>
-auto elispCallableFunction(emacs_env *, int nargs, emacs_value* args, void* data) -> emacs_value;
 
-template<typename R, typename... Args>
-auto wrapElispCallable(R (*Function)(Args...)) -> emacs_value(*)(emacs_env *, int nargs, emacs_value* args, void* data) {
-  return elispCallableFunction<Function>;
-}
+template<typename F> struct FunctionTraits;
 
-template<typename R, typename... Args>
-auto elispCallableFunction(emacs_env *env, int nargs, emacs_value* args, void* data) -> emacs_value {
+// template<typename R, typename... Args>
+// auto wrapElispCallable(R (*Function)(Args...)) -> emacs_function {
+//   return elispCallableFunction<Function>;
+// }
+
+template<typename... Args, lisp_callable_type<Args...> eFn>
+auto elispCallableFunction(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void* data) noexcept -> emacs_value {
+    // std::tuple<emacs_env*, const string> unpackedArgs{nullptr, "Hello"};
   int argNumber = 0;
-  std::tuple<Args..., void*> unpackedArgs
-    {
-     validate<Args>(env, args[argNumber++]) ...,
-     data
-    };
+  std::tuple<Args...> unpackedArgs{
+    validate<Args>(env, args[argNumber++]) ...,
+  };
 
-  std::apply(eFn, unpackedArgs);
+  return std::apply(eFn, unpackedArgs);
 }
+
+template<typename R, typename... Args>
+struct FunctionTraits<R(Args...)>
+{
+  using Pointer = R(*)(Args...);
+  using RetType = R;
+  using ArgTypes = std::tuple<Args...>;
+  static constexpr std::size_t ArgCount = sizeof...(Args);
+  template<std::size_t N>
+  using NthArg = std::tuple_element_t<N, ArgTypes>;
+  using FirstArg = NthArg<0>;
+  using LastArg = NthArg<ArgCount - 1>;
+};

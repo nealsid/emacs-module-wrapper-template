@@ -13,28 +13,28 @@ emacs_value lisp_callable(emacs_env* env, const string s) {
   return env->intern(env, "nil");
 }
 
-template<typename T>
+template<typename... Args>
 class TD;
 
 emacs_env_27 e;
 
 int emacs_module_init(struct emacs_runtime *runtime) noexcept {
   emacs_env* env = runtime->get_environment(runtime);
-  auto l =
-    std::function<emacs_function>(createFunctionWrapperForEmacs(std::function<emacs_value(emacs_env*, const string)>(lisp_callable), 0));
-  cout << l.target_type().name() << endl;
+  // auto l =
+  //   std::function<emacs_function>(createFunctionWrapperForEmacs(std::function<emacs_value(emacs_env*, const string)>(lisp_callable), 0));
+  // cout << l.target_type().name() << endl;
 
-  if (!l.target<emacs_value(emacs_env*, ptrdiff_t, emacs_value*, void*)>()) {
-    cout << "Could not get function pointer for user function" << endl;
-    emacs_value ev[10];
-    l(&e, 10, ev, nullptr);
-    abort();
-  }
+  // if (!l.target<emacs_value(emacs_env*, ptrdiff_t, emacs_value*, void*)>()) {
+  //   cout << "Could not get function pointer for user function" << endl;
+  //   emacs_value ev[10];
+  //   l(&e, 10, ev, nullptr);
+  //   abort();
+  // }
+  TD<FunctionTraits<decltype(lisp_callable)>::ArgTypes> t;
   emacs_value func = env->make_function(env,
                                         1,
                                         1,
-                                        (emacs_value(*)(emacs_env*, ptrdiff_t, emacs_value*, void*) noexcept)
-                                        (l.target<emacs_value(emacs_env*, ptrdiff_t, emacs_value*, void*)>()),
+                                        elispCallableFunction<FunctionTraits<decltype(lisp_callable)>::ArgTypes, lisp_callable>,
                                         "Test function",
                                         nullptr);
   emacs_value symbol = env->intern(env, "emwt-lisp-callable");
