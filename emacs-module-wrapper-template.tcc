@@ -74,7 +74,13 @@ template <typename R, typename... Args>
 struct EmacsCallableBase<R(*)(Args...)> {};
 
 template <auto F>
-struct EmacsCallable : EmacsCallableBase<decltype(F)> {};
+struct EmacsCallable : EmacsCallableBase<decltype(F)> {
+  using Ret = typename FunctionTraits<decltype(F)>::RetType;
+
+  auto operator()() noexcept -> Ret {
+    F(env, nargs, args, data);
+  }
+};
 
 template <auto C>
 auto elispCallableFunction(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void* data) noexcept -> emacs_value {
