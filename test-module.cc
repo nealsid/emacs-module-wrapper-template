@@ -30,11 +30,12 @@ int emacs_module_init(struct emacs_runtime *runtime) noexcept {
   //   l(&e, 10, ev, nullptr);
   //   abort();
   // }
-  TD<FunctionTraits<decltype(lisp_callable)>::ArgTypes> t;
+  EmacsCallable<lisp_callable> c;
   emacs_value func = env->make_function(env,
                                         1,
                                         1,
-                                        elispCallableFunction<FunctionTraits<decltype(lisp_callable)>::ArgTypes, lisp_callable>,
+                                        nullptr,
+                                        //                                        elispCallableFunction<FunctionTraits<decltype(lisp_callable)>::RetType, FunctionTraits<decltype(lisp_callable)>::ArgTypes, lisp_callable>,
                                         "Test function",
                                         nullptr);
   emacs_value symbol = env->intern(env, "emwt-lisp-callable");

@@ -67,12 +67,16 @@ auto validate(emacs_env* env, emacs_value arg) -> std::optional<std::string> {
 
 template<typename F> struct FunctionTraits;
 
-// template<typename R, typename... Args>
-// auto wrapElispCallable(R (*Function)(Args...)) -> emacs_function {
-//   return elispCallableFunction<Function>;
-// }
+template <typename F>
+struct EmacsCallableBase;
 
-template<typename... Args, lisp_callable_type<Args...> eFn>
+template <typename R, typename... Args>
+struct EmacsCallableBase<R(*)(Args...)> {};
+
+template <auto F>
+struct EmacsCallable : EmacsCallableBase<decltype(F)> {};
+
+template <auto C>
 auto elispCallableFunction(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void* data) noexcept -> emacs_value {
     // std::tuple<emacs_env*, const string> unpackedArgs{nullptr, "Hello"};
   int argNumber = 0;
