@@ -24,7 +24,7 @@ template<typename Param>
 auto validate(emacs_env*, emacs_value arg) -> std::optional<Param>;
 
 template<>
-auto validate(emacs_env* env, emacs_value arg) -> std::optional<emacs_env*> {
+auto validate<emacs_env*>(emacs_env* env, emacs_value arg) -> std::optional<emacs_env*> {
   cout << "Validating emacs_env" << endl;
   if (env != nullptr) {
     return env;
@@ -34,12 +34,13 @@ auto validate(emacs_env* env, emacs_value arg) -> std::optional<emacs_env*> {
 }
 
 template<>
-auto validate(emacs_env* env, emacs_value arg) -> std::optional<std::string> {
+auto validate<string>(emacs_env* env, emacs_value arg) -> std::optional<std::string> {
   cout << "Validating string" << endl;
   ptrdiff_t string_length;
   char* argument = NULL;
   bool ret = env->copy_string_contents(env, arg, NULL, &string_length);
   if (!ret) {
+    cout << "Could not retrieve string length." << endl;
     return nullptr;
   }
   argument = (char *)malloc(string_length);
@@ -67,34 +68,9 @@ auto validate(emacs_env* env, emacs_value arg) -> std::optional<std::string> {
 
 template<typename F> struct FunctionTraits;
 
-template <typename F>
-struct EmacsCallableBase;
-
-template <typename R, typename... Args>
-struct EmacsCallableBase<R(*)(Args...)> {};
-
-template <auto F>
-struct EmacsCallable : EmacsCallableBase<decltype(F)> {
-  using Ret = typename FunctionTraits<decltype(F)>::RetType;
-
-  auto operator()() noexcept -> Ret {
-    F(env, nargs, args, data);
-  }
-};
-
-template <auto C>
-auto elispCallableFunction(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void* data) noexcept -> emacs_value {
-    // std::tuple<emacs_env*, const string> unpackedArgs{nullptr, "Hello"};
-  int argNumber = 0;
-  std::tuple<Args...> unpackedArgs{
-    validate<Args>(env, args[argNumber++]) ...,
-  };
-
-  return std::apply(eFn, unpackedArgs);
-}
 
 template<typename R, typename... Args>
-struct FunctionTraits<R(Args...)>
+struct FunctionTraits<R(*)(Args...)>
 {
   using Pointer = R(*)(Args...);
   using RetType = R;
@@ -105,3 +81,38 @@ struct FunctionTraits<R(Args...)>
   using FirstArg = NthArg<0>;
   using LastArg = NthArg<ArgCount - 1>;
 };
+
+template <typename F>
+struct EmacsCallableBase;
+
+template <typename R, typename... Args>
+struct EmacsCallableBase<R(*)(Args...)> {
+  std::tuple<Args...> unpackedArgs;
+
+  auto unpackArguments(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void* data) noexcept -> void {
+    int argNumber = 0;
+    unpackedArgs = {
+		    (if constexpr std::is_same<Args, emacs_env*> {
+			env;
+		      } else {
+		      validate<Args>(env, args[argNumber++]).value();
+		    }) ..., };
+  }
+
+
+};
+
+template <auto F>
+struct EmacsCallable : EmacsCallableBase<decltype(F)> {
+  using function_traits = FunctionTraits<decltype(F)>;
+
+  auto operator()(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void* data) noexcept -> typename function_traits::RetType {
+    this->unpackArguments(env, nargs, args, data);
+    return std::apply(F, this->unpackedArgs);
+  }
+};
+
+template <auto C>
+auto elispCallableFunction(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void* data) noexcept -> emacs_value {
+  return (*C)(env, nargs, args, data);
+}
