@@ -85,6 +85,12 @@ struct FunctionTraits<R(*)(Args...)>
 template <typename F>
 struct EmacsCallableBase;
 
+template <typename T>
+struct UnpackArgument {
+
+};
+auto unpackArgument() -> T;
+
 template <typename R, typename... Args>
 struct EmacsCallableBase<R(*)(Args...)> {
   std::tuple<Args...> unpackedArgs;
@@ -92,15 +98,11 @@ struct EmacsCallableBase<R(*)(Args...)> {
   auto unpackArguments(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void* data) noexcept -> void {
     int argNumber = 0;
     unpackedArgs = {
-		    (if constexpr std::is_same<Args, emacs_env*> {
-			env;
-		      } else {
-		      validate<Args>(env, args[argNumber++]).value();
-		    }) ..., };
+      (std::is_same<Args, emacs_env*>::value ?
+       env : validate<Args>(env, args[argNumber++]).value();) ..., };
   }
-
-
 };
+
 
 template <auto F>
 struct EmacsCallable : EmacsCallableBase<decltype(F)> {
