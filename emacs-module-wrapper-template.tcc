@@ -8,60 +8,13 @@
 
 #include <iostream>
 #include <emacs-module.h>
-#include <optional>
-
-#include "varargs_bind.tcc"
+#include "parameter-validation.tcc"
 
 using namespace std;
 
-// Alias for function signature that Emacs knows how to call into.
-using emacs_function = emacs_value (*)(emacs_env*, ptrdiff_t, emacs_value*, void*) noexcept;
-
+// Alias for functions written in modules that are wrapped by this library.
 template<typename... Args>
 using lisp_callable_type = emacs_value (*)(Args...);
-
-template<typename Param>
-auto validate(emacs_env*, emacs_value arg) -> std::optional<Param>;
-
-template<>
-auto validate<emacs_env*>(emacs_env* env, emacs_value arg) -> std::optional<emacs_env*> {
-  cout << "Validating emacs_env" << endl;
-  if (env != nullptr) {
-    return env;
-  } else {
-    return nullopt;
-  }
-}
-
-template<>
-auto validate<string>(emacs_env* env, emacs_value arg) -> std::optional<std::string> {
-  cout << "Validating string" << endl;
-  ptrdiff_t string_length;
-  char* argument = NULL;
-  bool ret = env->copy_string_contents(env, arg, NULL, &string_length);
-  if (!ret) {
-    cout << "Could not retrieve string length." << endl;
-    return nullptr;
-  }
-  argument = (char *)malloc(string_length);
-
-  if (!argument) {
-    return nullptr;
-  }
-
-  ret = env->copy_string_contents(env, arg, argument, &string_length);
-
-  if (!ret) {
-    free(argument);
-    return nullptr;
-  }
-  return argument;
-}
-
-template<>
-auto validate<int>(emacs_env* env, emacs_value arg) -> std::optional<int> {
-  return env->extract_integer(env, arg);
-}
 
 // // Overload for reference parameter types which removes the reference.
 // template<typename FirstParam, typename... Args>
