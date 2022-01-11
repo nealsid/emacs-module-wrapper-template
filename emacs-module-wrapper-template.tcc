@@ -85,24 +85,31 @@ struct FunctionTraits<R(*)(Args...)>
 template <typename F>
 struct EmacsCallableBase;
 
-template <typename T>
-struct UnpackArgument {
-
-};
-auto unpackArgument() -> T;
-
 template <typename R, typename... Args>
 struct EmacsCallableBase<R(*)(Args...)> {
   std::tuple<Args...> unpackedArgs;
 
   auto unpackArguments(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void* data) noexcept -> void {
     int argNumber = 0;
+    // When we generate code to unpack arguments, most of the user
+    // function arguments come from the args array that Emacs gives
+    // us.  However, two don't: the emacs_env pointer, and the void*
+    // user data pointer.  So we have to make sure that we don't
+    // increment argNumber or look into the args array when generating
+    // code to pass those parameters, and, instead, just pass along
+    // whatever Emacs gives us. (the void* pointer is not implemented
+    // yet, but will follow the same approach).
     unpackedArgs = {
-      (std::is_same<Args, emacs_env*>::value ?
-       env : validate<Args>(env, args[argNumber++]).value();) ..., };
+      (([&] () {
+        if constexpr (std::is_same<Args, emacs_env*>::value) {
+          return env;
+        } else {
+          return validate<Args>(env, args[argNumber++]).value();
+        }
+      }())) ...
+    };
   }
 };
-
 
 template <auto F>
 struct EmacsCallable : EmacsCallableBase<decltype(F)> {
