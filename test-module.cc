@@ -8,8 +8,9 @@ int plugin_is_GPL_compatible;
 
 int register_elisp_functions();
 
-emacs_value lisp_callable(emacs_env* env, const string s) {
+emacs_value lisp_callable(emacs_env* env, const string s, int i) {
   cout << s << endl;
+  cout << i << endl;
   return env->intern(env, "nil");
 }
 
@@ -20,8 +21,8 @@ EmacsCallable<lisp_callable> c;
 int emacs_module_init(struct emacs_runtime *runtime) noexcept {
   emacs_env* env = runtime->get_environment(runtime);
   emacs_value func = env->make_function(env,
-                                        1,
-                                        1,
+                                        2,
+                                        2,
 					elispCallableFunction<&c>,
                                         "Test function",
                                         nullptr);

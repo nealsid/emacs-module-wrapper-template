@@ -58,6 +58,11 @@ auto validate<string>(emacs_env* env, emacs_value arg) -> std::optional<std::str
   return argument;
 }
 
+template<>
+auto validate<int>(emacs_env* env, emacs_value arg) -> std::optional<int> {
+  return env->extract_integer(env, arg);
+}
+
 // // Overload for reference parameter types which removes the reference.
 // template<typename FirstParam, typename... Args>
 // auto createFunctionWrapperForEmacs(user_function<FirstParam&, Args...> func,
