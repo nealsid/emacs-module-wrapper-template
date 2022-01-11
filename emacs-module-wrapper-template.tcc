@@ -100,8 +100,8 @@ struct EmacsCallableBase<R(*)(Args...)> {
     // function arguments come from the args array that Emacs gives
     // us.  However, two don't: the emacs_env pointer, and the void*
     // user data pointer.  So we have to make sure that we don't
-    // increment argNumber or look into the args array when generating
-    // code to pass those parameters, and, instead, just pass along
+    // increment argNumber or look into the args array in the generated
+    // code that passes those parameters, and, instead, just pass along
     // whatever Emacs gives us. (the void* pointer is not implemented
     // yet, but will follow the same approach).
     unpackedArgs = {
