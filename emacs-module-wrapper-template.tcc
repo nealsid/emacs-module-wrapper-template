@@ -1,6 +1,6 @@
 // This is a library to ease building Emacs modules.  Generally, when
-// you register functions with Emacs, you have to write logic to
-// unpack & validate the parameters from an array of emacs_value
+// you register module functions with Emacs, you have to write logic
+// to unpack & validate the parameters from an array of emacs_value
 // types. This can lead to a lot of boiler plate if you are
 // registering several different functions, so this library uses
 // templates to generate the wrapper functions that call into the
@@ -26,18 +26,10 @@ using lisp_callable_type = emacs_value (*)(Args...);
 
 template<typename F> struct FunctionTraits;
 
-
 template<typename R, typename... Args>
 struct FunctionTraits<R(*)(Args...)>
 {
-  using Pointer = R(*)(Args...);
   using RetType = R;
-  using ArgTypes = std::tuple<Args...>;
-  static constexpr std::size_t ArgCount = sizeof...(Args);
-  template<std::size_t N>
-  using NthArg = std::tuple_element_t<N, ArgTypes>;
-  using FirstArg = NthArg<0>;
-  using LastArg = NthArg<ArgCount - 1>;
 };
 
 template <typename F>
@@ -55,12 +47,13 @@ struct EmacsCallableBase<R(*)(Args...)> {
     // user data pointer.  So we have to make sure that we don't
     // increment argNumber or look into the args array in the generated
     // code that passes those parameters, and, instead, just pass along
-    // whatever Emacs gives us. (the void* pointer is not implemented
-    // yet, but will follow the same approach).
+    // whatever Emacs gives us.
     unpackedArgs = {
       (([&] () {
         if constexpr (std::is_same<Args, emacs_env*>::value) {
           return env;
+        } else if constexpr (std::is_same(Args, void*>::value) {
+          return data;
         } else {
           return validate<Args>(env, args[argNumber++]).value();
         }
