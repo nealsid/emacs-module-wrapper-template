@@ -57,24 +57,33 @@ struct CountParameterIter<CurrentArgCount, 1, std::optional<LastParam>> : CountP
 // struct CountParameterIter<CurrentArgCount, 0> {
 //   static constexpr size_t argCount = CurrentArgCount;
 // };
+  // static constexpr bool onlyTrailingOptionals = true;
+  // static constexpr bool foundOptionalParameter = false;
 
-template<typename FirstParam, typename... Args>
-struct ParameterTraits {
-  static constexpr bool onlyTrailingOptionals = true;
-  static constexpr bool foundOptionalParameter = false;
+  // static constexpr std::tuple optionalParams =
+  //   make_tuple((([] () {
+  // 		   if constexpr (std::is_same<is_optional<Args>, std::true_type>::value) {
+  // 		       foundOptionalParameter = true;
+  // 		     } else {
+  // 		     if constexpr (foundOptionalParameter) {
+  // 			 onlyTrailingOptionals = false;
+  // 		       }
+  // 		   }
+  // 		   return ;
+  // 		 }) ()) ...);
 
-  static constexpr std::tuple optionalParams =
-    make_tuple((([] () {
-		   if constexpr (std::is_same<is_optional<Args>, std::true_type>::value) {
-		       foundOptionalParameter = true;
-		     } else {
-		     if constexpr (foundOptionalParameter) {
-			 onlyTrailingOptionals = false;
-		       }
-		   }
-		   return ;
-		 }) ()) ...);
+template<bool optionalParameters, typename FirstParam, typename... Args>
+struct ParameterTraits : ParameterTraits<optionalParameters, Args...> {};
+
+template<bool optionalParameters, typename LastParameter>
+struct ParameterTraits<optionalParameters, std::optional<LastParameter>> {
+  static constexpr bool foundOptionalParameter = optionalParameters && is_optional<LastParameter>::value;
 };
+
+// template<bool optionalParameters, typename LastParameter>
+// struct ParameterTraits<optionalParameters, LastParameter> {
+
+// };
 
 template<typename F>
 struct FunctionTraits {};
@@ -82,9 +91,9 @@ struct FunctionTraits {};
 template<typename R, typename... Args>
 struct FunctionTraits<R(*)(Args...)> {
   static constexpr size_t argSize = sizeof...(Args);
-  static constexpr size_t optionalParameterCount = optionalParams ...
   static constexpr size_t argCount = CountParameterIter<0, sizeof...(Args), Args...>::argCount;
   static constexpr size_t optParamCount = CountParameterIter<0, sizeof...(Args), Args...>::optionalParamCount;
+  static constexpr ParameterTraits<false, Args...> parameterTraits;
 };
 
 
@@ -94,4 +103,5 @@ int main(int argc, char* argv[]) {
   cout << FunctionTraits<decltype(&func)>::argCount << endl;
   cout << FunctionTraits<decltype(&func)>::argSize << endl;
   cout << FunctionTraits<decltype(&func)>::optParamCount << endl;
+  cout << FunctionTraits<decltype(&func)>::parameterTraits.foundOptionalParameter << endl;
 }
