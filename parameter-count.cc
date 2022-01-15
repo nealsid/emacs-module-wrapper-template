@@ -58,16 +58,30 @@ struct CountParameterIter<CurrentArgCount, 1, std::optional<LastParam>> : CountP
 //   static constexpr size_t argCount = CurrentArgCount;
 // };
 
+template<typename FirstParam, typename... Args>
+struct ParameterTraits {
+  static constexpr bool onlyTrailingOptionals = true;
+  static constexpr bool foundOptionalParameter = false;
+
+  static constexpr std::tuple optionalParams =
+    make_tuple((([] () {
+		   if constexpr (std::is_same<is_optional<Args>, std::true_type>::value) {
+		       foundOptionalParameter = true;
+		     } else {
+		     if constexpr (foundOptionalParameter) {
+			 onlyTrailingOptionals = false;
+		       }
+		   }
+		   return ;
+		 }) ()) ...);
+};
+
 template<typename F>
 struct FunctionTraits {};
 
 template<typename R, typename... Args>
 struct FunctionTraits<R(*)(Args...)> {
   static constexpr size_t argSize = sizeof...(Args);
-  static constexpr std::tuple optionalParams =
-    make_tuple((([] () {
-		   return (std::is_same<is_optional<Args>, std::true_type>::value);
-		 }) ()) ...);
   static constexpr size_t optionalParameterCount = optionalParams ...
   static constexpr size_t argCount = CountParameterIter<0, sizeof...(Args), Args...>::argCount;
   static constexpr size_t optParamCount = CountParameterIter<0, sizeof...(Args), Args...>::optionalParamCount;
