@@ -35,19 +35,3 @@ struct ParameterTraits<NumberOfParameters, NumberOfOptionalParameters, AllOption
   static constexpr size_t optionalParameterCount = NumberOfOptionalParameters + 1;
   static constexpr bool allOptionalParametersTrailing = AllOptionalTrailing;
 };
-
-template<typename F>
-struct FunctionTraits {};
-
-template<typename R, typename... Args>
-struct FunctionTraits<R(*)(Args...)> {
-  static constexpr ParameterTraits<0, 0, true, Args...> parameterTraits;
-};
-
-void func(int a, int b, optional<int> c, optional<int> d);
-
-int main(int argc, char* argv[]) {
-  cout << FunctionTraits<decltype(&func)>::parameterTraits.parameterCount << endl;
-  cout << FunctionTraits<decltype(&func)>::parameterTraits.optionalParameterCount << endl;
-  cout << FunctionTraits<decltype(&func)>::parameterTraits.allOptionalParametersTrailing << endl;
-}

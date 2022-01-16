@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <emacs-module.h>
+#include "parameter-traits.tcc"
 #include "parameter-validation.tcc"
 
 using namespace std;
@@ -30,6 +31,8 @@ template<typename R, typename... Args>
 struct FunctionTraits<R(*)(Args...)>
 {
   using RetType = R;
+  using ParameterTraits = ParameterTraits<0, 0, true, Args...>;
+
 };
 
 template <typename F>
@@ -52,7 +55,7 @@ struct EmacsCallableBase<R(*)(Args...)> {
       (([&] () {
         if constexpr (std::is_same<Args, emacs_env*>::value) {
           return env;
-        } else if constexpr (std::is_same(Args, void*>::value) {
+        } else if constexpr (std::is_same<Args, void*>::value) {
           return data;
         } else {
           return validate<Args>(env, args[argNumber++]).value();
