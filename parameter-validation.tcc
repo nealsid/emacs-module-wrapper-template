@@ -48,3 +48,8 @@ template<>
 auto validate<int>(emacs_env* env, emacs_value arg) -> optional<int> {
   return env->extract_integer(env, arg);
 }
+
+template<>
+auto validate<std::optional<int>>(emacs_env* env, emacs_value arg) -> optional<optional<int>> {
+  return env->extract_integer(env, arg);
+}

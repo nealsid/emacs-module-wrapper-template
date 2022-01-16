@@ -32,7 +32,6 @@ struct FunctionTraits<R(*)(Args...)>
 {
   using RetType = R;
   using ParameterTraits = ParameterTraits<0, 0, true, Args...>;
-
 };
 
 template <typename F>
@@ -68,6 +67,22 @@ struct EmacsCallableBase<R(*)(Args...)> {
 template <auto F>
 struct EmacsCallable : EmacsCallableBase<decltype(F)> {
   using function_traits = FunctionTraits<decltype(F)>;
+
+  void defineInEmacs(struct emacs_runtime *runtime, const char* lisp_function_name, const char* documentation, void* data,
+  		     emacs_value (*fn)(emacs_env*, ptrdiff_t, emacs_value*, void*) noexcept) {
+    emacs_env* env = runtime->get_environment(runtime);
+    size_t requiredParameterCount = function_traits::ParameterTraits::parameterCount - function_traits::ParameterTraits::optionalParameterCount;
+    emacs_value func = env->make_function(env,
+  					  requiredParameterCount,
+  					  function_traits::ParameterTraits::parameterCount,
+  					  fn,
+  					  documentation,
+  					  data);
+    emacs_value symbol = env->intern(env, lisp_function_name);
+    emacs_value args[] = { symbol, func };
+    emacs_value defalias = env->intern(env, "defalias");
+    env->funcall(env, defalias, 2, args);
+  }
 
   auto operator()(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void* data) noexcept -> typename function_traits::RetType {
     this->unpackArguments(env, nargs, args, data);
