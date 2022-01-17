@@ -37,7 +37,7 @@ struct EmacsCallableBase<R(*)(Args...)> {
           return data;
         } else {
 	  if (argNumber < nargs) {
-            return ValidateParameterFromElisp<Args>{}(env, args[argNumber++]).value();
+            return ValidateParameterFromElisp<Args>{}(env, args[argNumber++]);
             //	    return validate<Args>(env, args[argNumber++]).value();
 	  } else {
 	    return Args(); // This is a little sketchy, but we only

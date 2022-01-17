@@ -8,24 +8,24 @@ using namespace std;
 
 template<typename Param>
 struct ValidateParameterFromElisp {
-  auto operator()(emacs_env*, emacs_value) -> optional<Param>;
+  auto operator()(emacs_env*, emacs_value) -> Param;
 };
 
 template<>
 struct ValidateParameterFromElisp<emacs_env*> {
-  auto operator()(emacs_env* env, emacs_value arg) -> optional<emacs_env*> {
+  auto operator()(emacs_env* env, emacs_value arg) -> emacs_env* {
     cout << "Validating emacs_env" << endl;
     if (env != nullptr) {
       return env;
     } else {
-      return nullopt;
+      return nullptr;
     }
   }
 };
 
 template<>
 struct ValidateParameterFromElisp<string> {
-  auto operator()(emacs_env* env, emacs_value arg) -> optional<string> {
+  auto operator()(emacs_env* env, emacs_value arg) -> string {
     cout << "Validating string" << endl;
     ptrdiff_t string_length;
     char* argument = NULL;
@@ -52,12 +52,14 @@ struct ValidateParameterFromElisp<string> {
 
 template<>
 struct ValidateParameterFromElisp<int> {
-  auto operator()(emacs_env* env, emacs_value arg) -> optional<int> {
+  auto operator()(emacs_env* env, emacs_value arg) -> int {
     return env->extract_integer(env, arg);
   }
 };
 
-// template<>
-// auto validate<optional<int>>(emacs_env* env, emacs_value arg) -> optional<int> {
-//   return nullopt;
-// }
+template<typename T>
+struct ValidateParameterFromElisp<optional<T>> {
+  auto operator()(emacs_env* env, emacs_value arg) -> optional<T> {
+    return ValidateParameterFromElisp<T>{}(env, arg);
+  }
+};
