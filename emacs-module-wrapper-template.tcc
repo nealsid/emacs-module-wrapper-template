@@ -17,14 +17,6 @@ using namespace std;
 template<typename... Args>
 using lisp_callable_type = emacs_value (*)(Args...);
 
-// // Overload for reference parameter types which removes the reference.
-// template<typename FirstParam, typename... Args>
-// auto createFunctionWrapperForEmacs(user_function<FirstParam&, Args...> func,
-//                                    int argNumber) -> std::optional<std::function<emacs_function>> {
-//   return createFunctionWrapperForEmacs((user_function<FirstParam, Args...>) func,
-//                                        argNumber);
-// }
-
 template<typename F> struct FunctionTraits;
 
 template<typename R, typename... Args>
@@ -57,7 +49,15 @@ struct EmacsCallableBase<R(*)(Args...)> {
         } else if constexpr (std::is_same<Args, void*>::value) {
           return data;
         } else {
-          return validate<Args>(env, args[argNumber++]).value();
+	  if (argNumber < nargs) {
+	    return validate<Args>(env, args[argNumber++]).value();
+	  } else {
+	    return Args(); // This is a little sketchy, but we only
+			   // get here when the argument type is
+			   // optional<T>, and a default-constructed
+			   // optional to represent an unset argument
+			   // is what we require.
+	  }
         }
       }())) ...
     };
