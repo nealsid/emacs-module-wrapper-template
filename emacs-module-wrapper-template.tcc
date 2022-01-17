@@ -53,10 +53,13 @@ struct EmacsCallableBase<R(*)(Args...)> {
 	    return validate<Args>(env, args[argNumber++]).value();
 	  } else {
 	    return Args(); // This is a little sketchy, but we only
-			   // get here when the argument type is
-			   // optional<T>, and a default-constructed
-			   // optional to represent an unset argument
-			   // is what we require.
+			   // get here at runtime when the argument
+			   // type is optional<T> and the argument has
+			   // not been passed by the elisp caller.  A
+			   // default-constructed optional to
+			   // represent an unset argument is what we
+			   // require.  TODO: There are potential
+			   // extra copies here to look into remove.
 	  }
         }
       }())) ...
