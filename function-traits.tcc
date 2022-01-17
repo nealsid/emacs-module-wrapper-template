@@ -3,10 +3,25 @@
 
 using namespace std;
 
+template<typename F> struct FunctionTraits;
+
+template<int NumberOfParameters,
+         int NumberOfOptionalParameters,
+         bool AllOptionalTrailing,
+         typename FirstParam,
+         typename... Args>
+struct ParameterTraits;
+
+template<typename R, typename... Args>
+struct FunctionTraits<R(*)(Args...)> {
+  using RetType = R;
+  using ParameterTraits = ParameterTraits<0, 0, true, Args...>;
+};
+
 // TODO: add
-//   static assert when user supplying a function with std::optional<void*> and std::optional<emacs_env*>.
-//   static assert when user supplying a function with more than 1 void* parameter.
-//   static_assert when allOptionalParametersTrailing == false.
+//   static assert when user instantiates with a function with std::optional<void*> and std::optional<emacs_env*>.
+//   static assert when user instantiates with a function with more than 1 void* parameter.
+//   static assert when allOptionalParametersTrailing == false.
 
 template<typename T>
 struct parameter_provided_by_elisp_caller {

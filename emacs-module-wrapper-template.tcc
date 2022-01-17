@@ -8,23 +8,10 @@
 
 #include <iostream>
 #include <emacs-module.h>
-#include "parameter-traits.tcc"
+#include "function-traits.tcc"
 #include "parameter-validation.tcc"
 
 using namespace std;
-
-// Alias for functions written in modules that are wrapped by this library.
-template<typename... Args>
-using lisp_callable_type = emacs_value (*)(Args...);
-
-template<typename F> struct FunctionTraits;
-
-template<typename R, typename... Args>
-struct FunctionTraits<R(*)(Args...)>
-{
-  using RetType = R;
-  using ParameterTraits = ParameterTraits<0, 0, true, Args...>;
-};
 
 template <typename F>
 struct EmacsCallableBase;
@@ -50,7 +37,8 @@ struct EmacsCallableBase<R(*)(Args...)> {
           return data;
         } else {
 	  if (argNumber < nargs) {
-	    return validate<Args>(env, args[argNumber++]).value();
+            return ValidateParameterFromElisp<Args>{}(env, args[argNumber++]).value();
+            //	    return validate<Args>(env, args[argNumber++]).value();
 	  } else {
 	    return Args(); // This is a little sketchy, but we only
 			   // get here at runtime when the argument
