@@ -9,13 +9,13 @@ int plugin_is_GPL_compatible;
 
 int register_elisp_functions();
 
-emacs_value lisp_callable(emacs_env* env, const string s, std::optional<int> i, std::optional<int> i2) {
+emacs_value lisp_callable(emacs_env* env, const string s, int i, std::optional<int> i2) {
   cout << s << endl;
-  if (i) {
-    cout << "i set: " << i.value() << endl;
-  } else {
-    cout << "i not provided" << endl;
-  }
+  // if (i) {
+    cout << "i set: " << i << endl;
+  // } else {
+  //   cout << "i not provided" << endl;
+  // }
 
   if (i2) {
     cout << "i2 set: " << i2.value() << endl;
