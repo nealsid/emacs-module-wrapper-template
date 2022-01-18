@@ -30,7 +30,13 @@ class TD;
 
 EmacsCallable<lisp_callable> c;
 int emacs_module_init(struct emacs_runtime *runtime) noexcept {
-  c.defineInEmacs(runtime, "emwt-lisp-callable", "Test function", nullptr,
-  		  elispCallableFunction<&c>);
+  emacs_funcall_exit result;
+
+  result = c.defineInEmacs(runtime, "emwt-lisp-callable", "Test function", nullptr,
+                           elispCallableFunction<&c>);
+
+  if (result != emacs_funcall_exit_return) {
+    return 1;
+  }
   return 0;
 }

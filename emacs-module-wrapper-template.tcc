@@ -38,7 +38,6 @@ struct EmacsCallableBase<R(*)(Args...)> {
         } else {
 	  if (argNumber < nargs) {
             return ValidateParameterFromElisp<Args>{}(env, args[argNumber++]);
-            //	    return validate<Args>(env, args[argNumber++]).value();
 	  } else {
 	    return Args(); // This is a little sketchy, but we only
 			   // get here at runtime when the argument
@@ -58,11 +57,14 @@ struct EmacsCallableBase<R(*)(Args...)> {
 template <auto F>
 struct EmacsCallable : EmacsCallableBase<decltype(F)> {
   using function_traits = FunctionTraits<decltype(F)>;
+  using parameter_traits = typename function_traits::ParameterTraits;
+  static constexpr size_t requiredParameterCount =
+    parameter_traits::parameterCount - parameter_traits::optionalParameterCount;
 
-  void defineInEmacs(struct emacs_runtime *runtime, const char* lisp_function_name, const char* documentation, void* data,
-  		     emacs_value (*fn)(emacs_env*, ptrdiff_t, emacs_value*, void*) noexcept) {
+  emacs_funcall_exit defineInEmacs(struct emacs_runtime *runtime, const char* lisp_function_name,
+                                   const char* documentation, void* data,
+                                   emacs_value (*fn)(emacs_env*, ptrdiff_t, emacs_value*, void*) noexcept) {
     emacs_env* env = runtime->get_environment(runtime);
-    size_t requiredParameterCount = function_traits::ParameterTraits::parameterCount - function_traits::ParameterTraits::optionalParameterCount;
     emacs_value func = env->make_function(env,
   					  requiredParameterCount,
   					  function_traits::ParameterTraits::parameterCount,
@@ -73,6 +75,8 @@ struct EmacsCallable : EmacsCallableBase<decltype(F)> {
     emacs_value args[] = { symbol, func };
     emacs_value defalias = env->intern(env, "defalias");
     env->funcall(env, defalias, 2, args);
+
+    return env->non_local_exit_check(env);
   }
 
   auto operator()(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void* data) noexcept -> typename function_traits::RetType {

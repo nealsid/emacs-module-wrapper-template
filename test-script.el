@@ -1,2 +1,2 @@
 (module-load "build/libtest-module.dylib")
-(emwt-lisp-callable  "hello")
+(emwt-lisp-callable  "hello" 5)
