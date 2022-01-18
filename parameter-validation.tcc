@@ -3,6 +3,7 @@
 #include <emacs-module.h>
 #include <iostream>
 #include <optional>
+#include <string_view>
 
 using namespace std;
 
@@ -24,8 +25,8 @@ struct ValidateParameterFromElisp<emacs_env*> {
 };
 
 template<>
-struct ValidateParameterFromElisp<string> {
-  auto operator()(emacs_env* env, emacs_value arg) -> string {
+struct ValidateParameterFromElisp<string_view> {
+  auto operator()(emacs_env* env, emacs_value arg) -> string_view {
     cout << "Validating string" << endl;
     ptrdiff_t string_length;
     char* argument = NULL;
@@ -46,6 +47,9 @@ struct ValidateParameterFromElisp<string> {
       free(argument);
       return nullptr;
     }
+    // This will construct a string_view over the char* array Emacs
+    // gives us. TODO: Look into embedded NULLs in Elisp string
+    // parameters.
     return argument;
   }
 };

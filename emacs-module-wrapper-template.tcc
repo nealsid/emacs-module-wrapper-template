@@ -52,6 +52,15 @@ struct EmacsCallableBase<R(*)(Args...)> {
       }())) ...
     };
   }
+
+  auto cleanup() -> void {
+    int argNumber = 0;
+    ([&] () {
+       if constexpr (std::is_same<Args, string_view>::value) {
+	   free(std::get<argNumber>(unpackedArgs)
+	 }
+     }()) ...
+  }
 };
 
 template <auto F>
