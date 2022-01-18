@@ -46,7 +46,7 @@ struct ValidateParameterFromElisp<string_view> {
     ret = env->copy_string_contents(env, arg, argument, &string_length);
 
     if (!ret) {
-      delete argument;
+      delete [] argument;
       return nullptr;
     }
     // This will construct a string_view over the char* array Emacs
