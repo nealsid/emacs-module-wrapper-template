@@ -56,10 +56,11 @@ struct EmacsCallableBase<R(*)(Args...)> {
   auto cleanup() -> void {
     int argNumber = 0;
     ([&] () {
-       if constexpr (std::is_same<Args, string_view>::value) {
-	   free(std::get<argNumber>(unpackedArgs)
-	 }
-     }()) ...
+      (if constexpr (std::is_same<Args, string_view>::value) {
+        string_view parameter = std::get<argNumber>(unpackedArgs);
+        delete [] parameter.data();
+        }) ...
+    }());
   }
 };
 

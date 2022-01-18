@@ -29,13 +29,15 @@ struct ValidateParameterFromElisp<string_view> {
   auto operator()(emacs_env* env, emacs_value arg) -> string_view {
     cout << "Validating string" << endl;
     ptrdiff_t string_length;
-    char* argument = NULL;
-    bool ret = env->copy_string_contents(env, arg, NULL, &string_length);
+    char* argument = nullptr;
+    bool ret = env->copy_string_contents(env, arg, nullptr, &string_length);
     if (!ret) {
       cout << "Could not retrieve string length." << endl;
       return nullptr;
     }
-    argument = (char *)malloc(string_length);
+    argument = new char[string_length]; // Length returned to us from
+                                        // Emacs includes null
+                                        // terminator.
 
     if (!argument) {
       return nullptr;
@@ -44,7 +46,7 @@ struct ValidateParameterFromElisp<string_view> {
     ret = env->copy_string_contents(env, arg, argument, &string_length);
 
     if (!ret) {
-      free(argument);
+      delete argument;
       return nullptr;
     }
     // This will construct a string_view over the char* array Emacs
