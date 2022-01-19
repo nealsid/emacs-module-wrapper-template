@@ -6,8 +6,10 @@
 // templates to generate the wrapper functions that call into the
 // function you provide.
 
-#include <iostream>
 #include <emacs-module.h>
+#include <iostream>
+#include <vector>
+
 #include "function-traits.tcc"
 #include "parameter-validation.tcc"
 
@@ -18,7 +20,8 @@ struct EmacsCallableBase;
 
 template <typename R, typename... Args>
 struct EmacsCallableBase<R(*)(Args...)> {
-  std::tuple<Args...> unpackedArgs;
+  tuple<Args...> unpackedArgs;
+  vector<char *> pointersToDelete;
 
   auto unpackArguments(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void* data) noexcept -> void {
     int argNumber = 0;
@@ -36,31 +39,37 @@ struct EmacsCallableBase<R(*)(Args...)> {
         } else if constexpr (std::is_same<Args, void*>::value) {
           return data;
         } else {
-	  if (argNumber < nargs) {
-            return ValidateParameterFromElisp<Args>{}(env, args[argNumber++]);
-	  } else {
-	    return Args(); // This is a little sketchy, but we only
-			   // get here at runtime when the argument
-			   // type is optional<T> and the argument has
-			   // not been passed by the elisp caller.  A
-			   // default-constructed optional to
-			   // represent an unset argument is what we
-			   // require.  TODO: There are potential
-			   // extra copies here to look into remove.
-	  }
+          if (argNumber < nargs) {
+            auto ret = ValidateParameterFromElisp<Args>{}(env, args[argNumber++]);
+
+            if constexpr (std::is_same<Args, string_view>::value) {
+              pointersToDelete.push_back(const_cast<char*>(ret.data()));
+            }
+
+            if constexpr (std::is_same<Args, optional<string_view>>::value) {
+              pointersToDelete.push_back(const_cast<char*>(ret.value().data()));
+            }
+            return ret;
+          } else {
+            return Args(); // This is a little sketchy, but we only
+                           // get here at runtime when the argument
+                           // type is optional<T> and the argument has
+                           // not been passed by the elisp caller.  A
+                           // default-constructed optional to
+                           // represent an unset argument is what we
+                           // require.  TODO: There are potential
+                           // extra copies here to look into remove.
+          }
         }
       }())) ...
     };
   }
 
   auto cleanup() -> void {
-    int argNumber = 0;
-    ([&] () {
-      (if constexpr (std::is_same<Args, string_view>::value) {
-        string_view parameter = std::get<argNumber>(unpackedArgs);
-        delete [] parameter.data();
-        }) ...
-    }());
+    for (auto ptr : pointersToDelete) {
+      delete [] ptr;
+    }
+    pointersToDelete.clear();
   }
 };
 
@@ -76,11 +85,11 @@ struct EmacsCallable : EmacsCallableBase<decltype(F)> {
                                    emacs_value (*fn)(emacs_env*, ptrdiff_t, emacs_value*, void*) noexcept) {
     emacs_env* env = runtime->get_environment(runtime);
     emacs_value func = env->make_function(env,
-  					  requiredParameterCount,
-  					  function_traits::ParameterTraits::parameterCount,
-  					  fn,
-  					  documentation,
-  					  data);
+                                          requiredParameterCount,
+                                          function_traits::ParameterTraits::parameterCount,
+                                          fn,
+                                          documentation,
+                                          data);
     emacs_value symbol = env->intern(env, lisp_function_name);
     emacs_value args[] = { symbol, func };
     emacs_value defalias = env->intern(env, "defalias");
@@ -91,7 +100,10 @@ struct EmacsCallable : EmacsCallableBase<decltype(F)> {
 
   auto operator()(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void* data) noexcept -> typename function_traits::RetType {
     this->unpackArguments(env, nargs, args, data);
-    return std::apply(F, this->unpackedArgs);
+    auto x = std::apply(F, this->unpackedArgs);
+    this->cleanup();
+    return x;
+
   }
 };
 
