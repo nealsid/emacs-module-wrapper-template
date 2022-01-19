@@ -42,11 +42,17 @@ struct EmacsCallableBase<R(*)(Args...)> {
           if (argNumber < nargs) {
             auto ret = ValidateParameterFromElisp<Args>{}(env, args[argNumber++]);
 
-            if constexpr (std::is_same<Args, string_view>::value) {
+            if constexpr (is_optional_type<Args>::value) {
+              // If argNumber < nargs and this parameter is optional,
+              // it has to be specified.
+              assert(ret);
+            }
+
+            if constexpr (is_same<Args, string_view>::value) {
               pointersToDelete.push_back(const_cast<char*>(ret.data()));
             }
 
-            if constexpr (std::is_same<Args, optional<string_view>>::value) {
+            if constexpr (is_same<Args, optional<string_view>>::value) {
               pointersToDelete.push_back(const_cast<char*>(ret.value().data()));
             }
             return ret;
