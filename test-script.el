@@ -1,4 +1,4 @@
-(module-load "build/libtest-module.dylib")
+(module-load "/Users/nealsid/src/github/emwt/build/libtest-module.dylib")
 (message "\nfirst call")
 (emwt-lisp-callable "Hello" 5 10)
 (message "\nsecond call")
