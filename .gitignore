@@ -1,3 +1,4 @@
 build
 *~
 Instruments.trace/*
+.DS_Store
