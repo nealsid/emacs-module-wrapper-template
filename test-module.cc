@@ -11,20 +11,20 @@ int plugin_is_GPL_compatible;
 int register_elisp_functions();
 
 emacs_value lisp_callable(emacs_env* env, optional<string_view> s, optional<int> i, optional<int> i2) {
-  if (s) {
-    cout << s.value() << endl;
-  }
-  if (i) {
-    cout << "i set: " << i.value() << endl;
-  } else {
-    cout << "i not provided" << endl;
-  }
+  // if (s) {
+  //   cout << s.value() << endl;
+  // }
+  // if (i) {
+  //   cout << "i set: " << i.value() << endl;
+  // } else {
+  //   cout << "i not provided" << endl;
+  // }
 
-  if (i2) {
-    cout << "i2 set: " << i2.value() << endl;
-  } else {
-    cout << "i2 not provided" << endl;
-  }
+  // if (i2) {
+  //   cout << "i2 set: " << i2.value() << endl;
+  // } else {
+  //   cout << "i2 not provided" << endl;
+  // }
   return env->intern(env, "nil");
 }
 

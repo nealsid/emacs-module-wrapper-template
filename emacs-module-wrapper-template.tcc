@@ -17,7 +17,7 @@
 
 using namespace std;
 
-os_log_t logger = os_log_create("com.nealsid.emacs.emwt", OS_LOG_CATEGORY_POINTS_OF_INTEREST);
+//os_log_t logger = os_log_create("com.nealsid.emacs.emwt", OS_LOG_CATEGORY_POINTS_OF_INTEREST);
 
 template <typename F>
 struct EmacsCallableBase;
@@ -109,11 +109,11 @@ struct EmacsCallable : EmacsCallableBase<decltype(F)> {
   }
 
   auto operator()(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void* data) noexcept -> typename function_traits::RetType {
-    os_signpost_interval_begin(logger, OS_SIGNPOST_ID_EXCLUSIVE, "Function call");
+    //    os_signpost_interval_begin(logger, OS_SIGNPOST_ID_EXCLUSIVE, "Function call");
     this->unpackArguments(env, nargs, args, data);
     auto x = std::apply(F, this->unpackedArgs);
     this->cleanup();
-    os_signpost_interval_end(logger, OS_SIGNPOST_ID_EXCLUSIVE, "Function call");
+    //    os_signpost_interval_end(logger, OS_SIGNPOST_ID_EXCLUSIVE, "Function call");
     return x;
 
   }

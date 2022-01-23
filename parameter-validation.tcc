@@ -23,21 +23,8 @@ struct ValidateParameterFromElisp {
 };
 
 template<>
-struct ValidateParameterFromElisp<emacs_env*> {
-  auto operator()(emacs_env* env, emacs_value arg) -> emacs_env* {
-    cout << "Validating emacs_env" << endl;
-    if (env != nullptr) {
-      return env;
-    } else {
-      return nullptr;
-    }
-  }
-};
-
-template<>
 struct ValidateParameterFromElisp<string_view> {
   auto operator()(emacs_env* env, emacs_value arg) -> string_view {
-    cout << "Validating string" << endl;
     ptrdiff_t string_length;
     char* argument = nullptr;
     bool ret = env->copy_string_contents(env, arg, nullptr, &string_length);
