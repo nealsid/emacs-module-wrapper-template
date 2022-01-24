@@ -45,6 +45,7 @@ template<int NumberOfParameters, int NumberOfOptionalParameters, bool AllOptiona
 struct ParameterTraits
   : ParameterTraits<NumberOfParameters + ((int)(parameter_provided_by_elisp_caller<FirstParam>::value)), // Increment parameters by 1 for FirstParam
                     NumberOfOptionalParameters + ((int)is_optional_type<FirstParam>::value), // Pass thru number of optional parameters
+                    AllOptionalTrailing &&
                     (NumberOfOptionalParameters > 0 && is_optional_type<FirstParam>::value) ||
                       NumberOfOptionalParameters == 0, // If NumberOfOptionalParameters > 0,
                                                        // and the current parameter is optional,
