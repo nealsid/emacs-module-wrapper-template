@@ -8,16 +8,6 @@
 using namespace std;
 
 template<typename Param>
-struct is_optional_type {
-  static constexpr bool value = false;
-};
-
-template<typename T>
-struct is_optional_type<optional<T>> {
-  static constexpr bool value = true;
-};
-
-template<typename Param>
 struct ValidateParameterFromElisp {
   auto operator()(emacs_env*, emacs_value) -> Param;
 };

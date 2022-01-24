@@ -1,4 +1,5 @@
 (module-load "/Users/nealsid/src/github/emwt/build/libtest-module.dylib")
+(describe-function 'emwt-lisp-callable)
 
 (defmacro measure-time (&rest body)
   "Measure the time it takes to evaluate BODY."

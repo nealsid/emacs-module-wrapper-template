@@ -89,6 +89,7 @@ struct EmacsCallable : EmacsCallableBase<decltype(F)> {
   using parameter_traits = typename function_traits::ParameterTraits;
   static constexpr size_t requiredParameterCount =
     parameter_traits::parameterCount - parameter_traits::optionalParameterCount;
+  static_assert(parameter_traits::allOptionalParametersTrailing, "Optional parameters must be trailing");
 
   emacs_funcall_exit defineInEmacs(struct emacs_runtime *runtime, const char* lisp_function_name,
                                    const char* documentation, void* data,
