@@ -18,6 +18,18 @@ struct FunctionTraits<R(*)(Args...)> {
   using ParameterTraits = ParameterTraits<0, 0, true, Args...>;
 };
 
+static_assert((int)true == 1, "Boolean 'true' did not cast to 1");
+
+template<typename Param>
+struct is_optional_type {
+  static constexpr bool value = false;
+};
+
+template<typename T>
+struct is_optional_type<optional<T>> {
+  static constexpr bool value = true;
+};
+
 // TODO: add
 //   static assert when user instantiates with a function with std::optional<void*> and std::optional<emacs_env*>.
 //   static assert when user instantiates with a function with more than 1 void* parameter.
@@ -32,37 +44,17 @@ struct parameter_provided_by_elisp_caller {
 template<int NumberOfParameters, int NumberOfOptionalParameters, bool AllOptionalTrailing, typename FirstParam, typename... Args>
 struct ParameterTraits
   : ParameterTraits<NumberOfParameters + ((int)(parameter_provided_by_elisp_caller<FirstParam>::value)), // Increment parameters by 1 for FirstParam
-                    NumberOfOptionalParameters, // Pass thru number of optional parameters
-                    !(NumberOfOptionalParameters > 0), // If NumberOfOptionalParameters > 0,
-                                                       // set this value to false, since we're
-                                                       // in the specialization that handles
-                                                       // non-optional parameters.
+                    NumberOfOptionalParameters + ((int)is_optional_type<FirstParam>::value), // Pass thru number of optional parameters
+                    (NumberOfOptionalParameters > 0 && is_optional_type<FirstParam>::value) ||
+                      NumberOfOptionalParameters == 0, // If NumberOfOptionalParameters > 0,
+                                                       // and the current parameter is optional,
+                                                       // set this value to true.  If there are no optional parameters, set it true.
                     Args...> {};
 
-// Partial specialization when the parameter we are matching is std::optional<T>.
-template<int NumberOfParameters, int NumberOfOptionalParameters, bool AllOptionalTrailing, typename FirstParameter, typename... Args>
-struct ParameterTraits<NumberOfParameters, NumberOfOptionalParameters, AllOptionalTrailing, optional<FirstParameter>, Args...>
-  : ParameterTraits<NumberOfParameters + 1, NumberOfOptionalParameters + 1, AllOptionalTrailing, Args...> {};
-
-// Base case when last parameter is not optional.
+// Base case.
 template<int NumberOfParameters, int NumberOfOptionalParameters, bool AllOptionalTrailing, typename LastParameter>
 struct ParameterTraits<NumberOfParameters, NumberOfOptionalParameters, AllOptionalTrailing, LastParameter> {
   static constexpr size_t parameterCount = NumberOfParameters + ((int)(parameter_provided_by_elisp_caller<LastParameter>::value));
-  static constexpr size_t optionalParameterCount = NumberOfOptionalParameters;
-  static constexpr bool allOptionalParametersTrailing = AllOptionalTrailing;
-};
-
-// Base case when last parameter is optional.
-//
-// I tried this without a partial specialization for an optional last
-// parameter (instead, I made the test for optional part of the
-// calculation of optionalParameterCount in the base case above), but
-// then a function with an optional last parameter would match both of
-// the previous two specializations (the first one with an empty
-// parameter pack for remaining arguments).
-template<int NumberOfParameters, int NumberOfOptionalParameters, bool AllOptionalTrailing, typename LastParameter>
-struct ParameterTraits<NumberOfParameters, NumberOfOptionalParameters, AllOptionalTrailing, optional<LastParameter>> {
-  static constexpr size_t parameterCount = NumberOfParameters + 1;
-  static constexpr size_t optionalParameterCount = NumberOfOptionalParameters + 1;
-  static constexpr bool allOptionalParametersTrailing = AllOptionalTrailing;
+  static constexpr size_t optionalParameterCount = NumberOfOptionalParameters + ((int)is_optional_type<LastParameter>::value);
+  static constexpr bool allOptionalParametersTrailing = AllOptionalTrailing && is_optional_type<LastParameter>::value;
 };

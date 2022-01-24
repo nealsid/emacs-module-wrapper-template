@@ -1,4 +1,5 @@
-(module-load "/Users/nealsid/src/github/emwt/build/libtest-module.dylib")
+(module-load "build/libtest-module.dylib")
+(describe-function 'emwt-lisp-callable)
 (message "\nlooping call")
 (dotimes (i 20000)
   (emwt-lisp-callable "Hello" 5 10))

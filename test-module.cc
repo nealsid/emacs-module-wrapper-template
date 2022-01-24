@@ -10,7 +10,7 @@ int plugin_is_GPL_compatible;
 
 int register_elisp_functions();
 
-emacs_value lisp_callable(emacs_env* env, optional<string_view> s, optional<int> i, optional<int> i2) {
+emacs_value lisp_callable(emacs_env* env, string_view s, int i, int i2) {
   // if (s) {
   //   cout << s.value() << endl;
   // }
