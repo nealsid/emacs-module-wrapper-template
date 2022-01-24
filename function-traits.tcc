@@ -33,7 +33,6 @@ struct is_optional_type<optional<T>> {
 // TODO: add
 //   static assert when user instantiates with a function with std::optional<void*> and std::optional<emacs_env*>.
 //   static assert when user instantiates with a function with more than 1 void* parameter.
-//   static assert when allOptionalParametersTrailing == false.
 
 template<typename T>
 struct parameter_provided_by_elisp_caller {
@@ -57,5 +56,5 @@ template<int NumberOfParameters, int NumberOfOptionalParameters, bool AllOptiona
 struct ParameterTraits<NumberOfParameters, NumberOfOptionalParameters, AllOptionalTrailing, LastParameter> {
   static constexpr size_t parameterCount = NumberOfParameters + ((int)(parameter_provided_by_elisp_caller<LastParameter>::value));
   static constexpr size_t optionalParameterCount = NumberOfOptionalParameters + ((int)is_optional_type<LastParameter>::value);
-  static constexpr bool allOptionalParametersTrailing = AllOptionalTrailing && is_optional_type<LastParameter>::value;
+  static constexpr bool allOptionalParametersTrailing = AllOptionalTrailing && ((NumberOfOptionalParameters > 0 && is_optional_type<LastParameter>::value ) || (NumberOfOptionalParameters == 0));
 };

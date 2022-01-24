@@ -11,4 +11,4 @@ add_custom_command(OUTPUT libtest-module.dylib.dSYM
   COMMAND /usr/bin/dsymutil $<TARGET_FILE_NAME:test-module>
   WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
 
-add_custom_target(dsym ALL DEPENDS libtest-module.dylib.dSYM)
+add_custom_target(dsym ALL DEPENDS libtest-module.dylib.dSYM test-module)
