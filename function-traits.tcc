@@ -37,12 +37,24 @@ struct is_optional_type<optional<T>> {
 
 template<typename T>
 struct parameter_provided_by_elisp_caller {
-  static constexpr bool value = !(std::is_same<T, emacs_env*>::value || std::is_same<T, void*>::value);
+  static constexpr bool value = !(is_same<T, emacs_env*>::value || is_same<T, void*>::value);
+};
+
+template<typename T>
+struct remove_optional {
+  using type = T;
+};
+
+template<typename T>
+struct remove_optional<optional<T>> {
+  using type = T;
 };
 
 template<typename T>
 struct parameter_requires_deallocation {
-  static constexpr bool value = std::is_same<remove_reference<remove_cv<T>>, string_view>::value;
+  static constexpr bool value =
+    is_same<remove_reference<remove_cv<T>>, string_view>::value ||
+    is_same<remove_reference<remove_cv<typename remove_optional<T>::type>>, string_view>::value;
 };
 
 // Template class definition for calculating parameter traits.
