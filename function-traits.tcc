@@ -53,7 +53,6 @@ struct remove_optional<optional<T>> {
 template<typename T>
 struct parameter_requires_deallocation {
   static constexpr bool value =
-    is_same<remove_reference<remove_cv<T>>, string_view>::value ||
     is_same<remove_reference<remove_cv<typename remove_optional<T>::type>>, string_view>::value;
 };
 
