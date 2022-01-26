@@ -5,8 +5,9 @@ using namespace std;
 
 template<typename F> struct FunctionTraits;
 
-template<int NumberOfParameters,
-         int NumberOfOptionalParameters,
+template<uint8_t NumberOfParameters,
+         uint8_t NumberOfOptionalParameters,
+         uint8_t NumberParametersRequireDeallocation,
          bool AllOptionalTrailing,
          typename FirstParam,
          typename... Args>
@@ -15,12 +16,12 @@ struct ParameterTraits;
 template<typename R, typename... Args>
 struct FunctionTraits<R(*)(Args...)> {
   using RetType = R;
-  using ParameterTraits = ParameterTraits<0, 0, true, Args...>;
+  using ParameterTraits = ParameterTraits<0, 0, 0, true, Args...>;
 };
 
-static_assert((int)true == 1, "Boolean 'true' did not cast to 1");
+static_assert((uint8_t)true == 1, "Boolean 'true' did not cast to 1");
 
-template<typename Param>
+template<typename T>
 struct is_optional_type {
   static constexpr bool value = false;
 };
@@ -39,11 +40,22 @@ struct parameter_provided_by_elisp_caller {
   static constexpr bool value = !(std::is_same<T, emacs_env*>::value || std::is_same<T, void*>::value);
 };
 
+template<typename T>
+struct parameter_requires_deallocation {
+  static constexpr bool value = std::is_same<remove_reference<remove_cv<T>>, string_view>::value;
+};
+
 // Template class definition for calculating parameter traits.
-template<int NumberOfParameters, int NumberOfOptionalParameters, bool AllOptionalTrailing, typename FirstParam, typename... Args>
+template<uint8_t NumberOfParameters,
+         uint8_t NumberOfOptionalParameters,
+         uint8_t NumberParametersRequireDeallocation,
+         bool AllOptionalTrailing,
+         typename FirstParam,
+         typename... Args>
 struct ParameterTraits
-  : ParameterTraits<NumberOfParameters + ((int)(parameter_provided_by_elisp_caller<FirstParam>::value)), // Increment parameters by 1 for FirstParam
-                    NumberOfOptionalParameters + ((int)is_optional_type<FirstParam>::value), // Pass thru number of optional parameters
+  : ParameterTraits<NumberOfParameters + ((uint8_t)(parameter_provided_by_elisp_caller<FirstParam>::value)), // Increment parameters by 1 for FirstParam
+                    NumberOfOptionalParameters + ((uint8_t)is_optional_type<FirstParam>::value), // Increment number of optional parameters if necessary
+                    NumberParametersRequireDeallocation + ((uint8_t)parameter_requires_deallocation<FirstParam>::value), // Increment number of parameters that requires deallocation.
                     AllOptionalTrailing &&
                     (NumberOfOptionalParameters > 0 && is_optional_type<FirstParam>::value) ||
                       NumberOfOptionalParameters == 0, // If NumberOfOptionalParameters > 0,
@@ -52,9 +64,14 @@ struct ParameterTraits
                     Args...> {};
 
 // Base case.
-template<int NumberOfParameters, int NumberOfOptionalParameters, bool AllOptionalTrailing, typename LastParameter>
-struct ParameterTraits<NumberOfParameters, NumberOfOptionalParameters, AllOptionalTrailing, LastParameter> {
-  static constexpr size_t parameterCount = NumberOfParameters + ((int)(parameter_provided_by_elisp_caller<LastParameter>::value));
-  static constexpr size_t optionalParameterCount = NumberOfOptionalParameters + ((int)is_optional_type<LastParameter>::value);
+template<uint8_t NumberOfParameters,
+         uint8_t NumberOfOptionalParameters,
+         uint8_t NumParametersRequireDeallocation,
+         bool AllOptionalTrailing,
+         typename LastParameter>
+struct ParameterTraits<NumberOfParameters, NumberOfOptionalParameters, NumParametersRequireDeallocation, AllOptionalTrailing, LastParameter> {
+  static constexpr size_t parameterCount = NumberOfParameters + ((uint8_t)(parameter_provided_by_elisp_caller<LastParameter>::value));
+  static constexpr size_t optionalParameterCount = NumberOfOptionalParameters + ((uint8_t)is_optional_type<LastParameter>::value);
+  static constexpr uint8_t numDeallocatedParaameters = NumParametersRequireDeallocation + ((uint8_t)parameter_requires_deallocation<LastParameter>::value);
   static constexpr bool allOptionalParametersTrailing = AllOptionalTrailing && ((NumberOfOptionalParameters > 0 && is_optional_type<LastParameter>::value ) || (NumberOfOptionalParameters == 0));
 };
