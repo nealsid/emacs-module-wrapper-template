@@ -51,9 +51,12 @@ struct remove_optional<optional<T>> {
 };
 
 template<typename T>
+using remove_optional_t = typename remove_optional<T>::type;
+
+template<typename T>
 struct parameter_requires_deallocation {
   static constexpr bool value =
-    is_same<remove_reference<remove_cv<typename remove_optional<T>::type>>, string_view>::value;
+    is_same<remove_reference_t<remove_cv_t<remove_optional_t<T>>>, string_view>::value;
 };
 
 // Template class definition for calculating parameter traits.
