@@ -52,12 +52,12 @@ struct remove_optional {
 };
 
 template<typename T>
-struct remove_optional<optional<T>> {
-  using type = T;
-};
+using remove_optional_t = typename remove_optional<T>::type;
 
 template<typename T>
-using remove_optional_t = typename remove_optional<T>::type;
+struct remove_optional<optional<T>> {
+  using type = remove_optional_t<T>;
+};
 
 template<typename T>
 struct parameter_requires_deallocation {
