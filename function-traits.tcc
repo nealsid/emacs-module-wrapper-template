@@ -90,8 +90,8 @@ template<uint8_t NumberOfParameters,
          bool AllOptionalTrailing,
          typename LastParameter>
 struct ParameterTraits<NumberOfParameters, NumberOfOptionalParameters, NumParametersRequireDeallocation, AllOptionalTrailing, LastParameter> {
-  static constexpr size_t parameterCount = NumberOfParameters + ((uint8_t)(parameter_provided_by_elisp_caller<LastParameter>::value));
-  static constexpr size_t optionalParameterCount = NumberOfOptionalParameters + ((uint8_t)is_optional_type<LastParameter>::value);
+  static constexpr uint8_t parameterCount = NumberOfParameters + ((uint8_t)(parameter_provided_by_elisp_caller<LastParameter>::value));
+  static constexpr uint8_t optionalParameterCount = NumberOfOptionalParameters + ((uint8_t)is_optional_type<LastParameter>::value);
   static constexpr uint8_t numDeallocatedParameters = NumParametersRequireDeallocation + ((uint8_t)parameter_requires_deallocation<LastParameter>::value);
   static constexpr bool allOptionalParametersTrailing = AllOptionalTrailing && ((NumberOfOptionalParameters > 0 && is_optional_type<LastParameter>::value ) || (NumberOfOptionalParameters == 0));
 };
