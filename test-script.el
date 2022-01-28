@@ -1,4 +1,4 @@
-(module-load "/Users/nealsid/src/github/emwt/build/libtest-module.dylib")
+(module-load "build/libtest-module.dylib")
 ;;(describe-function 'emwt-lisp-callable)
 
 (defmacro measure-time (&rest body)
@@ -7,7 +7,7 @@
      ,@body
      (message "%.06f" (float-time (time-since time)))))
 
-(setq ntimes 1000)
+(setq ntimes 2000000)
 
 (message "\nlooping call %d times" ntimes)
 

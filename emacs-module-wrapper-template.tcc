@@ -10,10 +10,12 @@
 #define __EMACS_MODULE_WRAPPER_TEMPLATE__
 
 #include <emacs-module.h>
-#include <iostream>
-#include <vector>
 #include <os/log.h>
 #include <os/signpost.h>
+
+#include <array>
+#include <iostream>
+#include <vector>
 
 #include "function-traits.tcc"
 #include "parameter-validation.tcc"
@@ -27,11 +29,20 @@ struct EmacsCallableBase;
 
 template <typename R, typename... Args>
 struct EmacsCallableBase<R(*)(Args...)> {
+  using function_traits = FunctionTraits<R(*)(Args...)>;
+  using parameter_traits = typename function_traits::ParameterTraits;
+  static constexpr size_t requiredParameterCount =
+    parameter_traits::parameterCount - parameter_traits::optionalParameterCount;
+  static_assert(parameter_traits::allOptionalParametersTrailing, "Optional parameters must be trailing");
+
   tuple<Args...> unpackedArgs;
-  vector<char *> pointersToDelete;
+  std::array<char*, parameter_traits::numDeallocatedParameters> pointersToDelete = { nullptr };
+  int numberOfPointers = 0;
+  //  vector<char *> pointersToDelete;
 
   auto unpackArguments(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void* data) noexcept -> void {
     int argNumber = 0;
+    numberOfPointers = 0;
     // When we generate code to unpack arguments, most of the user
     // function arguments come from the args array that Emacs gives
     // us.  However, two don't: the emacs_env pointer, and the void*
@@ -55,13 +66,10 @@ struct EmacsCallableBase<R(*)(Args...)> {
               assert(ret);
             }
 
-            if constexpr (is_same<Args, string_view>::value) {
-              pointersToDelete.push_back(const_cast<char*>(ret.data()));
+            if constexpr (is_same<remove_optional_t<Args>, string_view>::value) {
+              pointersToDelete[numberOfPointers++] = const_cast<char*>(ret.data());
             }
 
-            if constexpr (is_same<Args, optional<string_view>>::value) {
-              pointersToDelete.push_back(const_cast<char*>(ret.value().data()));
-            }
             return ret;
           } else {
             return Args(); // This is a little sketchy, but we only
@@ -77,22 +85,6 @@ struct EmacsCallableBase<R(*)(Args...)> {
       }())) ...
     };
   }
-
-  auto cleanup() -> void {
-    for (auto ptr : pointersToDelete) {
-      delete [] ptr;
-    }
-    pointersToDelete.clear();
-  }
-};
-
-template <auto F>
-struct EmacsCallable : EmacsCallableBase<decltype(F)> {
-  using function_traits = FunctionTraits<decltype(F)>;
-  using parameter_traits = typename function_traits::ParameterTraits;
-  static constexpr size_t requiredParameterCount =
-    parameter_traits::parameterCount - parameter_traits::optionalParameterCount;
-  static_assert(parameter_traits::allOptionalParametersTrailing, "Optional parameters must be trailing");
 
   emacs_funcall_exit defineInEmacs(struct emacs_runtime *runtime, const char* lisp_function_name,
                                    const char* documentation, void* data,
@@ -112,7 +104,19 @@ struct EmacsCallable : EmacsCallableBase<decltype(F)> {
     return env->non_local_exit_check(env);
   }
 
-  auto operator()(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void* data) noexcept -> typename function_traits::RetType {
+  auto cleanup() -> void {
+    for (auto ptr : pointersToDelete) {
+      if (ptr) {
+        delete [] ptr;
+      }
+    }
+    pointersToDelete.fill(nullptr);
+  }
+};
+
+template <auto F>
+struct EmacsCallable : EmacsCallableBase<decltype(F)> {
+  auto operator()(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void* data) noexcept -> emacs_value {
     os_signpost_interval_begin(logger, OS_SIGNPOST_ID_EXCLUSIVE, "Function call");
     this->unpackArguments(env, nargs, args, data);
     auto x = std::apply(F, this->unpackedArgs);
