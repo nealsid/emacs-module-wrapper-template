@@ -29,9 +29,10 @@ template <typename R, typename... Args>
 struct EmacsCallableBase<R(*)(Args...)> {
   tuple<Args...> unpackedArgs;
   vector<char *> pointersToDelete;
+  using parameterIndex = make_index_sequence<sizeof...(Args)>;
 
   auto unpackArguments(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void* data) noexcept -> void {
-    int argNumber = 0;
+    constexpr int argNumber = 0;
     // When we generate code to unpack arguments, most of the user
     // function arguments come from the args array that Emacs gives
     // us.  However, two don't: the emacs_env pointer, and the void*
@@ -39,44 +40,48 @@ struct EmacsCallableBase<R(*)(Args...)> {
     // increment argNumber or look into the args array in the generated
     // code that passes those parameters, and, instead, just pass along
     // whatever Emacs gives us.
-    unpackedArgs = {
-      (([&] () {
-        if constexpr (std::is_same<Args, emacs_env*>::value) {
-          return env;
-        } else if constexpr (std::is_same<Args, void*>::value) {
-          return data;
-        } else {
-          if (argNumber < nargs) {
-            auto ret = ValidateParameterFromElisp<Args>{}(env, args[argNumber++]);
 
+
+    (([&] () {
+        if constexpr (std::is_same<Args, emacs_env*>::value) {
+	    return env;
+        } else if constexpr (std::is_same<Args, void*>::value) {
+	    return data;
+	} else {
+          if (argNumber < nargs) {
+            auto ret = ValidateParameterFromElisp<Args>{}(env,
+							  args[argNumber + 1],
+							  std::get<argNumber + 1>(unpackedArgs));
+
+	    argNumber++;
             if constexpr (is_optional_type<Args>::value) {
-              // If argNumber < nargs and this parameter is optional,
-              // it has to be specified.
-              assert(ret);
-            }
+		// If argNumber < nargs and this parameter is optional,
+		// it has to be specified.
+		assert(ret);
+	      }
 
             if constexpr (is_same<Args, string_view>::value) {
-              pointersToDelete.push_back(const_cast<char*>(ret.data()));
-            }
+		pointersToDelete.push_back(const_cast<char*>(ret.data()));
+	      }
 
             if constexpr (is_same<Args, optional<string_view>>::value) {
-              pointersToDelete.push_back(const_cast<char*>(ret.value().data()));
-            }
+		pointersToDelete.push_back(const_cast<char*>(ret.value().data()));
+              }
             return ret;
           } else {
             return Args(); // This is a little sketchy, but we only
-                           // get here at runtime when the argument
-                           // type is optional<T> and the argument has
-                           // not been passed by the elisp caller.  A
-                           // default-constructed optional to
-                           // represent an unset argument is what we
-                           // require.  TODO: There are potential
-                           // extra copies here to look into remove.
+            // get here at runtime when the argument
+            // type is optional<T> and the argument has
+            // not been passed by the elisp caller.  A
+            // default-constructed optional to
+            // represent an unset argument is what we
+            // require.  TODO: There are potential
+            // extra copies here to look into remove.
           }
         }
       }())) ...
-    };
-  }
+
+      }
 
   auto cleanup() -> void {
     for (auto ptr : pointersToDelete) {
