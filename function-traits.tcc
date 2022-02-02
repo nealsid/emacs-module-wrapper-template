@@ -85,11 +85,21 @@ struct ParameterTraits
   : ParameterTraits<NumberOfParameters + ((uint8_t)(parameter_provided_by_elisp_caller_v<FirstParam>)), // Increment parameters by 1 for FirstParam
                     NumberOfOptionalParameters + ((uint8_t)is_optional_type_v<FirstParam>), // Increment number of optional parameters if necessary
                     NumberParametersRequireDeallocation + ((uint8_t)parameter_requires_deallocation_v<FirstParam>), // Increment number of parameters that requires deallocation.
-                    AllOptionalTrailing &&
-                    (NumberOfOptionalParameters > 0 && is_optional_type_v<FirstParam>) ||
-                      NumberOfOptionalParameters == 0, // If NumberOfOptionalParameters > 0,
-                                                       // and the current parameter is optional,
-                                                       // set this value to true.  If there are no optional parameters, set it true.
+		    //
+		    //
+		    // All optional trailing continues to be true if
+		    // there are no optional parameters, regardless if
+		    // the current parameter is optional or not.
+		    // It's also true if there are previous optional
+		    // parameters, the current parameter is optional,
+		    // and all optional parameters have been trailing
+		    // up until this parameter (i.e. prior to this
+		    // parameter, we did not have an optional
+		    // parameter followed by a non-optional parameter)
+		    // TODO: maybe this would be clearer if we
+		    // recursed from right to left separately for this trait.
+		    (NumberOfOptionalParameters == 0 ||
+		     (NumberOfOptionalParameters > 0 && is_optional_type_v<FirstParam> && AllOptionalTrailing)),
                     Args...> {};
 
 // Base case.
@@ -102,7 +112,8 @@ struct ParameterTraits<NumberOfParameters, NumberOfOptionalParameters, NumParame
   static constexpr uint8_t parameterCount = NumberOfParameters + ((uint8_t)(parameter_provided_by_elisp_caller_v<LastParameter>));
   static constexpr uint8_t optionalParameterCount = NumberOfOptionalParameters + ((uint8_t)is_optional_type_v<LastParameter>);
   static constexpr uint8_t numDeallocatedParameters = NumParametersRequireDeallocation + ((uint8_t)parameter_requires_deallocation_v<LastParameter>);
-  static constexpr bool allOptionalParametersTrailing = AllOptionalTrailing && ((NumberOfOptionalParameters > 0 && is_optional_type_v<LastParameter> ) || (NumberOfOptionalParameters == 0));
+  static constexpr bool allOptionalParametersTrailing = (NumberOfOptionalParameters == 0 ||
+							 (NumberOfOptionalParameters > 0 && is_optional_type_v<LastParameter> && AllOptionalTrailing));
 };
 
 #endif  // __FUNCTION_TRAITS__
