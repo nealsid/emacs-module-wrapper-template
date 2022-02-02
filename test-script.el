@@ -1,4 +1,4 @@
-(module-load "/Users/nealsid/src/github/emwt/build/libtest-module.dylib")
+(module-load "build/libtest-module.dylib")
 ;;(describe-function 'emwt-lisp-callable)
 
 (defmacro measure-time (&rest body)

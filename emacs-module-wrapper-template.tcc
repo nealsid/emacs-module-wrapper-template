@@ -42,9 +42,9 @@ struct EmacsCallableBase<R(*)(Args...)> {
     // whatever Emacs gives us.
     unpackedArgs = {
       (([&] () {
-        if constexpr (std::is_same<Args, emacs_env*>::value) {
+        if constexpr (std::is_same_v<Args, emacs_env*>) {
           return env;
-        } else if constexpr (std::is_same<Args, void*>::value) {
+        } else if constexpr (std::is_same_v<Args, void*>) {
           return data;
         } else {
           if (argNumber < nargs) {
@@ -56,11 +56,11 @@ struct EmacsCallableBase<R(*)(Args...)> {
               assert(ret);
             }
 
-            if constexpr (is_same<Args, string_view>::value) {
+            if constexpr (is_same_v<Args, string_view>) {
               pointersToDelete.push_back(const_cast<char*>(ret.data()));
             }
 
-            if constexpr (is_same<Args, optional<string_view>>::value) {
+            if constexpr (is_same_v<Args, optional<string_view>>) {
               pointersToDelete.push_back(const_cast<char*>(ret.value().data()));
             }
             return ret;

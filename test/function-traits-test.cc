@@ -14,7 +14,7 @@ static_assert(lf1::numDeallocatedParameters == 1);
 
 template<typename A, typename B>
 struct assert_same_types {
-  static_assert(is_same<A, B>::value);
+  static_assert(is_same_v<A, B>);
 };
 
 assert_same_types<remove_optional_t<int>, int> a;
