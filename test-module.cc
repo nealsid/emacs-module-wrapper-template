@@ -10,8 +10,9 @@ int plugin_is_GPL_compatible;
 
 int register_elisp_functions();
 
+int counter = 0;
 emacs_value lisp_callable(emacs_env* env, string_view s) {
-  cout << s << endl;
+  counter++;
   // if (i) {
   //   cout << "i set: " << i.value() << endl;
   // } else {
@@ -39,5 +40,6 @@ int emacs_module_init(struct emacs_runtime *runtime) noexcept {
   if (result != emacs_funcall_exit_return) {
     return 1;
   }
+  cout << "counter: " << counter << endl;
   return 0;
 }

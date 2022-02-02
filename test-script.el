@@ -7,7 +7,7 @@
      ,@body
      (message "%.06f" (float-time (time-since time)))))
 
-(setq ntimes 1000)
+(setq ntimes 10000)
 
 (message "\nlooping call %d times" ntimes)
 

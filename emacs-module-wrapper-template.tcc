@@ -9,9 +9,10 @@
 #ifndef __EMACS_MODULE_WRAPPER_TEMPLATE__
 #define __EMACS_MODULE_WRAPPER_TEMPLATE__
 
-#include <emacs-module.h>
 #include <iostream>
 #include <vector>
+
+#include <emacs-module.h>
 #include <os/log.h>
 #include <os/signpost.h>
 
@@ -90,6 +91,7 @@ template <auto F>
 struct EmacsCallable : EmacsCallableBase<decltype(F)> {
   using function_traits = FunctionTraits<decltype(F)>;
   using parameter_traits = typename function_traits::ParameterTraits;
+
   static constexpr size_t requiredParameterCount =
     parameter_traits::parameterCount - parameter_traits::optionalParameterCount;
   static_assert(parameter_traits::allOptionalParametersTrailing, "Optional parameters must be trailing");
