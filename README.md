@@ -54,6 +54,11 @@ This chart shows a run in Instruments, collecting "Cycles with outstanding L1 mi
 
 ![PerfCounters](PerfCounterChart.png)
 
+Some future optimizations planned are:
+
+* Use a statically-allocated buffer for strings to reduce the need to allocate heap memory during the function invocation.
+* When unpacking parameters, figure out a way to unpack them directly into the arguments tuple (similar to emplace functions), instead of returning them and relying on copies being made.
+
 Instruments screen shot
 
 ![InstrumentsScreenshot](InstrumentsScreenShot.png)
