@@ -74,7 +74,10 @@ struct parameter_requires_deallocation {
 template<typename T>
 inline constexpr bool parameter_requires_deallocation_v = parameter_requires_deallocation<T>::value;
 
-// Template class definition for calculating parameter traits.
+// Template class definition for calculating parameter traits.  The
+// recursion works by breaking the parameter list into First,
+// Rest... and incrementing statistics based on analyzing First, and
+// then processing Rest...
 template<uint8_t NumberOfParameters,
          uint8_t NumberOfOptionalParameters,
          uint8_t NumberParametersRequireDeallocation,
@@ -96,8 +99,6 @@ struct ParameterTraits
 		    // up until this parameter (i.e. prior to this
 		    // parameter, we did not have an optional
 		    // parameter followed by a non-optional parameter)
-		    // TODO: maybe this would be clearer if we
-		    // recursed from right to left separately for this trait.
 		    (NumberOfOptionalParameters == 0 ||
 		     (NumberOfOptionalParameters > 0 && is_optional_type_v<FirstParam> && AllOptionalTrailing)),
                     Args...> {};
