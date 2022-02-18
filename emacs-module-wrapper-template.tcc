@@ -23,6 +23,11 @@ using namespace std;
 
 os_log_t logger = os_log_create("com.nealsid.emacs.emwt", OS_LOG_CATEGORY_POINTS_OF_INTEREST);
 
+template <typename FirstParam, typename... Args>
+struct generate_argument_index_sequence_helper :
+template <typename... Args>
+struct generate_argument_index_sequence : generate_argument_index_sequence_helper<Args> {};
+
 template <typename F>
 struct EmacsCallableBase;
 
@@ -45,9 +50,10 @@ struct EmacsCallableBase<R(*)(Args...)> {
         if (argNumber < nargs) {
           auto ret = ValidateParameterFromElisp<Args>{}(env, args[argNumber], data);
           argNumber += (int)(!is_type_any_of_v<Args, void*, emacs_env*>);
+
+          // If argNumber < nargs and this parameter is optional,
+          // it has to be specified.
           if constexpr (is_optional_type_v<Args>) {
-            // If argNumber < nargs and this parameter is optional,
-            // it has to be specified.
             assert(ret);
           }
 
@@ -116,7 +122,6 @@ struct EmacsCallable : EmacsCallableBase<decltype(F)> {
     this->cleanup();
     os_signpost_interval_end(logger, OS_SIGNPOST_ID_EXCLUSIVE, "Function call");
     return x;
-
   }
 };
 
