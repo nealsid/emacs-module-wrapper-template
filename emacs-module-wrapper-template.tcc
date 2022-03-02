@@ -9,6 +9,7 @@
 #ifndef __EMACS_MODULE_WRAPPER_TEMPLATE__
 #define __EMACS_MODULE_WRAPPER_TEMPLATE__
 
+#include <array>
 #include <iostream>
 #include <vector>
 
@@ -26,11 +27,11 @@ os_log_t logger = os_log_create("com.nealsid.emacs.emwt", OS_LOG_CATEGORY_POINTS
 template <typename... Args>
 struct generate_argument_indices {
   static int parameterIndex;
-  initializer_list<size_t> values =
+  static constexpr initializer_list<int> values =
     {
      [] () {
        if constexpr (!is_type_any_of_v<Args, void *, emacs_env*>) {
-         return parameterIndex++;
+         return 0;
        } else {
          return -1;
        }
@@ -42,7 +43,7 @@ template<typename... Args>
 int generate_argument_indices<Args...>::parameterIndex = 0;
 
 template<typename... Args>
-inline constexpr auto generate_argument_indices_vs = generate_argument_index<Args...>::values;
+inline constexpr auto generate_argument_indices_vs = generate_argument_indices<Args...>::values;
 
 template <typename F>
 struct EmacsCallableBase;
@@ -51,6 +52,7 @@ template <typename R, typename... Args>
 struct EmacsCallableBase<R(*)(Args...)> {
   tuple<Args...> unpackedArgs;
   vector<char *> pointersToDelete;
+  vector<int> argument_indices{generate_argument_indices_vs<Args...>};
 
   auto unpackArguments(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void* data) noexcept -> void {
     int argNumber = 0;
@@ -65,6 +67,7 @@ struct EmacsCallableBase<R(*)(Args...)> {
       (([&] () {
         if (argNumber < nargs) {
           auto ret = ValidateParameterFromElisp<Args>{}(env, args[argNumber], data);
+          cout << argument_indices[argNumber] << "\t";
           argNumber += (int)(!is_type_any_of_v<Args, void*, emacs_env*>);
 
           // If argNumber < nargs and this parameter is optional,
@@ -94,6 +97,7 @@ struct EmacsCallableBase<R(*)(Args...)> {
 
       } ())) ...
     };
+    cout << endl;
   }
 
   auto cleanup() -> void {
