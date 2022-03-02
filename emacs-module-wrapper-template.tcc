@@ -23,10 +23,26 @@ using namespace std;
 
 os_log_t logger = os_log_create("com.nealsid.emacs.emwt", OS_LOG_CATEGORY_POINTS_OF_INTEREST);
 
-template <typename FirstParam, typename... Args>
-struct generate_argument_index_sequence_helper :
 template <typename... Args>
-struct generate_argument_index_sequence : generate_argument_index_sequence_helper<Args> {};
+struct generate_argument_indices {
+  static int parameterIndex;
+  initializer_list<size_t> values =
+    {
+     [] () {
+       if constexpr (!is_type_any_of_v<Args, void *, emacs_env*>) {
+         return parameterIndex++;
+       } else {
+         return -1;
+       }
+      }() ...
+    };
+};
+
+template<typename... Args>
+int generate_argument_indices<Args...>::parameterIndex = 0;
+
+template<typename... Args>
+inline constexpr auto generate_argument_indices_vs = generate_argument_index<Args...>::values;
 
 template <typename F>
 struct EmacsCallableBase;
