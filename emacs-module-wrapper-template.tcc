@@ -24,18 +24,20 @@ using namespace std;
 
 os_log_t logger = os_log_create("com.nealsid.emacs.emwt", OS_LOG_CATEGORY_POINTS_OF_INTEREST);
 
+template<typename T>
+struct TD;
+
 template <typename... Args>
 struct generate_argument_indices {
   static int parameterIndex;
-  static constexpr initializer_list<int> values =
-    {
-     [] () {
-       if constexpr (!is_type_any_of_v<Args, void *, emacs_env*>) {
-         return 0;
-       } else {
-         return -1;
-       }
-      }() ...
+  static constexpr initializer_list<int> values{
+      ([] () {
+        if constexpr (is_same_v<Args, emacs_env*>) {
+          return -1;
+        } else {
+          return 0;
+        }
+      }()) ...
     };
 };
 
@@ -123,7 +125,7 @@ struct EmacsCallable : EmacsCallableBase<decltype(F)> {
     emacs_env* env = runtime->get_environment(runtime);
     emacs_value func = env->make_function(env,
                                           requiredParameterCount,
-                                          function_traits::ParameterTraits::parameterCount,
+                                          parameter_traits::parameterCount,
                                           fn,
                                           documentation,
                                           data);

@@ -27,9 +27,6 @@ emacs_value lisp_callable(emacs_env* env, string_view s) {
   return env->intern(env, "nil");
 }
 
-template<typename... Args>
-class TD;
-
 EmacsCallable<lisp_callable> c;
 int emacs_module_init(struct emacs_runtime *runtime) noexcept {
   emacs_funcall_exit result;
