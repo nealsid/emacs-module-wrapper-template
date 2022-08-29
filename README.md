@@ -7,6 +7,7 @@ emacs_value some_C_work_useful_for_Emacs(int a, const string& s, void* data) {
 
 }
 
+/* This is the function that actually gets called from Emacs */
 emacs_value elisp_callable(emacs_env* env, ptrdiff_t nargs, emacs_value* args, void* data) {
   // Assert nargs contains 1 or 2
   // unpack an int from args with error handling
@@ -14,6 +15,7 @@ emacs_value elisp_callable(emacs_env* env, ptrdiff_t nargs, emacs_value* args, v
   return some_C_work_useful_for_Emacs(i, s, data);
 }
 
+/* This is how modules are initialized and how functions are registered for being called from elisp */
 int emacs_module_init(struct emacs_runtime *runtime) noexcept {
     emacs_env* env = runtime->get_environment(runtime);
     emacs_value func = env->make_function(env,
@@ -39,9 +41,12 @@ emacs_value lisp_callable(emacs_env* env, const string s, std::optional<int> i) 
 }
 
 EmacsCallable<lisp_callable> c;
+
 int emacs_module_init(struct emacs_runtime *runtime) noexcept {
+
   c.defineInEmacs(runtime, "emwt-lisp-callable", "Test function", nullptr,
   		  elispCallableFunction<&c>);
+
   return 0;
 }
 ```
