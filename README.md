@@ -2,12 +2,12 @@
 This project is motivated by recently writing an Emacs module.  When you define a function in C/C++ that is callable from elisp, there is some boilerplate and manual transformation of function properties when registering the function with Emacs, as well as unpacking parameters.  For a good discussion of writing Emacs modules, see http://diobla.info/blog-archive/modules-tut.html#sec-2-2.  The point of this library is to use template metaprogramming to turn something like this:
 
 ```
-
+/** This is some function that encapsulates the work you need done in C++ */
 emacs_value some_C_work_useful_for_Emacs(int a, const string& s, void* data) {
 
 }
 
-/* This is the function that actually gets called from Emacs */
+/* This is the function that actually gets called from and is registered with Emacs */
 emacs_value elisp_callable(emacs_env* env, ptrdiff_t nargs, emacs_value* args, void* data) {
   // Assert nargs contains 1 or 2
   // unpack an int from args with error handling
@@ -15,7 +15,7 @@ emacs_value elisp_callable(emacs_env* env, ptrdiff_t nargs, emacs_value* args, v
   return some_C_work_useful_for_Emacs(i, s, data);
 }
 
-/* This is how modules are initialized and how functions are registered for being called from elisp */
+/* This is how modules are initialized, and how functions are registered for being called from elisp */
 int emacs_module_init(struct emacs_runtime *runtime) noexcept {
     emacs_env* env = runtime->get_environment(runtime);
     emacs_value func = env->make_function(env,
@@ -34,6 +34,7 @@ int emacs_module_init(struct emacs_runtime *runtime) noexcept {
 into something like this:
 
 ```
+/* This is your same function that encapsulates work you need to do in C++ */
 emacs_value lisp_callable(emacs_env* env, const string s, std::optional<int> i) {
   cout << s << endl;
   cout << i.value() << endl;
