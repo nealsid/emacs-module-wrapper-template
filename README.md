@@ -35,13 +35,13 @@ into something like this:
 
 ```
 /* This is your same function that encapsulates work you need to do in C++ */
-emacs_value lisp_callable(emacs_env* env, const string s, std::optional<int> i) {
+emacs_value some_C_work_useful_for_Emacs(emacs_env* env, const string s, std::optional<int> i) {
   cout << s << endl;
   cout << i.value() << endl;
   return env->intern(env, "nil");
 }
 
-EmacsCallable<lisp_callable> c;
+EmacsCallable<some_C_work_useful_for_Emacs> c;
 
 int emacs_module_init(struct emacs_runtime *runtime) noexcept {
 
