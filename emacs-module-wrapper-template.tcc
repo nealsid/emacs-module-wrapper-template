@@ -99,7 +99,7 @@ struct EmacsCallableBase<R(*)(Args...)> {
 
       } ())) ...
     };
-    cout << endl;
+    cout << "Hello" <<  endl;
   }
 
   auto cleanup() -> void {

@@ -1,3 +1,3 @@
 #!/bin/bash
 
-/Applications/Emacs.app/Contents/MacOS/Emacs --script test-script.el
+/Applications/Emacs.app/Contents/MacOS/Emacs -q --script test-script.el
