@@ -13,6 +13,7 @@ int register_elisp_functions();
 int counter = 0;
 emacs_value lisp_callable(emacs_env* env, string_view s) {
   counter++;
+  cout << "funcall" << endl;
   // if (i) {
   //   cout << "i set: " << i.value() << endl;
   // } else {

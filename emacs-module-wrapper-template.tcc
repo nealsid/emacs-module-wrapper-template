@@ -69,6 +69,9 @@ struct EmacsCallableBase<R(*)(Args...)> {
       (([&] () {
         if (argNumber < nargs) {
           auto ret = ValidateParameterFromElisp<Args>{}(env, args[argNumber], data);
+          if (env->non_local_exit_check(env) != emacs_funcall_exit_return) {
+            return Args();
+          }
           cout << argument_indices[argNumber] << "\t";
           argNumber += (int)(!is_type_any_of_v<Args, void*, emacs_env*>);
 
@@ -79,7 +82,9 @@ struct EmacsCallableBase<R(*)(Args...)> {
           }
 
           if constexpr (is_same_v<Args, string_view>) {
-            pointersToDelete.push_back(const_cast<char*>(ret.data()));
+            if (ret.data() != nullptr) {
+              pointersToDelete.push_back(const_cast<char*>(ret.data()));
+            }
           }
 
           if constexpr (is_same_v<Args, optional<string_view>>) {
@@ -140,6 +145,9 @@ struct EmacsCallable : EmacsCallableBase<decltype(F)> {
   auto operator()(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void* data) noexcept -> typename function_traits::RetType {
     os_signpost_interval_begin(logger, OS_SIGNPOST_ID_EXCLUSIVE, "Function call");
     this->unpackArguments(env, nargs, args, data);
+    if (env->non_local_exit_check(env) != emacs_funcall_exit_return) {
+      return nullptr;
+    }
     auto x = std::apply(F, this->unpackedArgs);
     this->cleanup();
     os_signpost_interval_end(logger, OS_SIGNPOST_ID_EXCLUSIVE, "Function call");

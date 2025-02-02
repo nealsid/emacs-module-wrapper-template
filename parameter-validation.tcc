@@ -47,7 +47,7 @@ struct ValidateParameterFromElisp<string_view> {
     bool ret = env->copy_string_contents(env, arg, nullptr, &string_length);
     if (!ret) {
       cout << "Could not retrieve string length." << endl;
-      return nullptr;
+      return string_view();
     }
     argument = new char[string_length]; // Length returned to us from
                                         // Emacs includes null
