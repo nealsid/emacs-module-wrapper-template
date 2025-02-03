@@ -27,26 +27,6 @@ os_log_t logger = os_log_create("com.nealsid.emacs.emwt", OS_LOG_CATEGORY_POINTS
 template<typename T>
 struct TD;
 
-template <typename... Args>
-struct generate_argument_indices {
-  static int parameterIndex;
-  static constexpr initializer_list<int> values{
-      ([] () {
-        if constexpr (is_same_v<Args, emacs_env*>) {
-          return -1;
-        } else {
-          return 0;
-        }
-      }()) ...
-    };
-};
-
-template<typename... Args>
-int generate_argument_indices<Args...>::parameterIndex = 0;
-
-template<typename... Args>
-inline constexpr auto generate_argument_indices_vs = generate_argument_indices<Args...>::values;
-
 template <typename F>
 struct EmacsCallableBase;
 
@@ -54,7 +34,6 @@ template <typename R, typename... Args>
 struct EmacsCallableBase<R(*)(Args...)> {
   tuple<Args...> unpackedArgs;
   vector<char *> pointersToDelete;
-  vector<int> argument_indices{generate_argument_indices_vs<Args...>};
 
   auto unpackArguments(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void* data) noexcept -> void {
     // argNumber is the index into "args" array, so we increment it
@@ -81,7 +60,6 @@ struct EmacsCallableBase<R(*)(Args...)> {
           if (env->non_local_exit_check(env) != emacs_funcall_exit_return) {
             return Args();
           }
-          cout << argument_indices[argNumber] << "\t";
           argNumber += (int)(!is_type_any_of_v<Args, void*, emacs_env*>);
 
           // If argNumber < nargs and this parameter is optional,
