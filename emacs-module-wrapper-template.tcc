@@ -68,6 +68,9 @@ struct EmacsCallableBase<R(*)(Args...)> {
     unpackedArgs = {
       (([&] () {
         if (argNumber < nargs) {
+          if (env->non_local_exit_check(env) != emacs_funcall_exit_return) {
+            return Args();
+          }
           auto ret = ValidateParameterFromElisp<Args>{}(env, args[argNumber], data);
           if (env->non_local_exit_check(env) != emacs_funcall_exit_return) {
             return Args();
