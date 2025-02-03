@@ -91,7 +91,9 @@ struct EmacsCallableBase<R(*)(Args...)> {
           }
 
           if constexpr (is_same_v<Args, optional<string_view>>) {
-            pointersToDelete.push_back(const_cast<char*>(ret.value().data()));
+            if (ret.value().data() != nullptr) {
+              pointersToDelete.push_back(const_cast<char*>(ret.value().data()));
+            }
           }
           return ret;
         } else {
