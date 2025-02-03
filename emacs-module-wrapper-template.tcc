@@ -57,6 +57,9 @@ struct EmacsCallableBase<R(*)(Args...)> {
   vector<int> argument_indices{generate_argument_indices_vs<Args...>};
 
   auto unpackArguments(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void* data) noexcept -> void {
+    // argNumber is the index into "args" array, so we increment it
+    // for every parameter of the user function (with exceptions - see
+    // comment below)
     int argNumber = 0;
     // When we generate code to unpack arguments, most of the user
     // function arguments come from the args array that Emacs gives
@@ -68,10 +71,13 @@ struct EmacsCallableBase<R(*)(Args...)> {
     unpackedArgs = {
       (([&] () {
         if (argNumber < nargs) {
+
           if (env->non_local_exit_check(env) != emacs_funcall_exit_return) {
             return Args();
           }
+
           auto ret = ValidateParameterFromElisp<Args>{}(env, args[argNumber], data);
+
           if (env->non_local_exit_check(env) != emacs_funcall_exit_return) {
             return Args();
           }
