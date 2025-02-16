@@ -132,14 +132,14 @@ struct EmacsCallable : EmacsCallableBase<decltype(F)> {
   }
 
   auto operator()(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void* data) noexcept -> typename function_traits::RetType {
-    os_signpost_interval_begin(logger, OS_SIGNPOST_ID_EXCLUSIVE, "Function call");
+
     this->unpackArguments(env, nargs, args, data);
     if (env->non_local_exit_check(env) != emacs_funcall_exit_return) {
       return nullptr;
     }
     auto x = std::apply(F, this->unpackedArgs);
     this->cleanup();
-    os_signpost_interval_end(logger, OS_SIGNPOST_ID_EXCLUSIVE, "Function call");
+
     return x;
   }
 };
