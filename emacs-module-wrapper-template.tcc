@@ -22,16 +22,14 @@
 
 using namespace std;
 
-os_log_t logger = os_log_create("com.nealsid.emacs.emwt", OS_LOG_CATEGORY_POINTS_OF_INTEREST);
-
 template<typename T>
 struct TD;
 
 template <typename F>
-struct EmacsCallableBase;
+struct EmacsFunctionInvocation;
 
 template <typename R, typename... Args>
-struct EmacsCallableBase<R(*)(Args...)> {
+struct EmacsFunctionInvocation<R(*)(Args...)> {
   tuple<Args...> unpackedArgs;
   vector<char *> pointersToDelete;
 
@@ -105,7 +103,7 @@ struct EmacsCallableBase<R(*)(Args...)> {
 };
 
 template <auto F>
-struct EmacsCallable : EmacsCallableBase<decltype(F)> {
+struct EmacsCallable {
   using function_traits = FunctionTraits<decltype(F)>;
   using parameter_traits = typename function_traits::ParameterTraits;
 
@@ -132,13 +130,14 @@ struct EmacsCallable : EmacsCallableBase<decltype(F)> {
   }
 
   auto operator()(emacs_env *env, ptrdiff_t nargs, emacs_value* args, void* data) noexcept -> typename function_traits::RetType {
+    EmacsFunctionInvocation<decltype(F)> invocation;
 
-    this->unpackArguments(env, nargs, args, data);
+    invocation.unpackArguments(env, nargs, args, data);
     if (env->non_local_exit_check(env) != emacs_funcall_exit_return) {
       return nullptr;
     }
-    auto x = std::apply(F, this->unpackedArgs);
-    this->cleanup();
+    auto x = std::apply(F, invocation.unpackedArgs);
+    invocation.cleanup();
 
     return x;
   }
