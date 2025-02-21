@@ -40,27 +40,23 @@ struct ValidateParameterFromElisp<void*> {
 };
 
 template<>
-struct ValidateParameterFromElisp<string_view> {
-  auto operator()(emacs_env* env, emacs_value arg, void* data) -> string_view {
+struct ValidateParameterFromElisp<char*> {
+  auto operator()(emacs_env* env, emacs_value arg, void* data) -> char* {
     ptrdiff_t string_length;
-    char* argument = nullptr;
     bool ret = env->copy_string_contents(env, arg, nullptr, &string_length);
     if (!ret) {
       cout << "Could not retrieve string length." << endl;
-      return string_view();
-    }
-    argument = new char[string_length]; // Length returned to us from
-                                        // Emacs includes null
-                                        // terminator.
-
-    if (!argument) {
       return nullptr;
     }
+    auto argument = make_unique_for_overwrite<char[]>(string_length);
 
-    ret = env->copy_string_contents(env, arg, argument, &string_length);
+    if (!argument) {
+      return argument;
+    }
+
+    ret = env->copy_string_contents(env, arg, argument.get(), &string_length);
 
     if (!ret) {
-      delete [] argument;
       return nullptr;
     }
     // This will construct a string_view over the char* array Emacs

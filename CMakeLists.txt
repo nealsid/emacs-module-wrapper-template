@@ -5,7 +5,7 @@ project(emacs-module-wrapper-template)
 include_directories("/Applications/Emacs.app/Contents/Resources/include")
 
 add_library(test-module SHARED test-module.cc)
-set_property(TARGET test-module PROPERTY CXX_STANDARD 17)
+set_property(TARGET test-module PROPERTY CXX_STANDARD 23)
 
 add_custom_command(OUTPUT libtest-module.dylib.dSYM
   COMMAND /usr/bin/dsymutil $<TARGET_FILE_NAME:test-module>

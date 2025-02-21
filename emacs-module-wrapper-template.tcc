@@ -11,11 +11,10 @@
 
 #include <array>
 #include <iostream>
+#include <variant>
 #include <vector>
 
 #include <emacs-module.h>
-#include <os/log.h>
-#include <os/signpost.h>
 
 #include "function-traits.tcc"
 #include "parameter-validation.tcc"
