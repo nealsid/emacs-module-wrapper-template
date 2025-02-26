@@ -10,6 +10,7 @@
 #define __EMACS_MODULE_WRAPPER_TEMPLATE__
 
 #include <array>
+#include <assert.h>
 #include <iostream>
 #include <variant>
 #include <vector>
@@ -93,7 +94,7 @@ struct EmacsFunctionInvocation<R(*)(Args...)> {
     cout << "Hello" <<  endl;
   }
 
-  auto cleanup() -> void {
+  ~EmacsFunctionInvocation() {
     for (auto ptr : pointersToDelete) {
       delete [] ptr;
     }
@@ -136,8 +137,6 @@ struct EmacsCallable {
       return nullptr;
     }
     auto x = std::apply(F, invocation.unpackedArgs);
-    invocation.cleanup();
-
     return x;
   }
 };

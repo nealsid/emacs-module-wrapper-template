@@ -77,6 +77,6 @@ struct ValidateParameterFromElisp<int> {
 template<typename T>
 struct ValidateParameterFromElisp<optional<T>> {
   auto operator()(emacs_env* env, emacs_value arg, void* data) -> optional<T> {
-    return ValidateParameterFromElisp<T>{}(env, arg);
+    return ValidateParameterFromElisp<T>{}(env, arg, data);
   }
 };

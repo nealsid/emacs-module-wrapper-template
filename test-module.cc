@@ -11,9 +11,12 @@ int plugin_is_GPL_compatible;
 int register_elisp_functions();
 
 int counter = 0;
-emacs_value lisp_callable(emacs_env* env, char* s) {
+emacs_value lisp_callable(emacs_env* env, char* s, optional<int> i) {
   counter++;
-  cout << "funcall" << endl;
+  cout << s << endl;
+  if (i) {
+    cout << "i set" << endl;
+  }
   // if (i) {
   //   cout << "i set: " << i.value() << endl;
   // } else {

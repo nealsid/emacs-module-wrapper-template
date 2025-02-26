@@ -1,5 +1,5 @@
 (module-load "/Users/nealsid/emacs-module-wrapper-template/libtest-module.dylib")
-(emwt-lisp-callable "hello")
+(emwt-lisp-callable "hello, world!")
 (describe-function 'emwt-lisp-callable)
 
 (defmacro measure-time (&rest body)
