@@ -65,15 +65,15 @@ struct EmacsFunctionInvocation<R(*)(Args...)> {
             assert(ret);
           }
 
-          if constexpr (is_same_v<Args, string_view>) {
-            if (ret.data() != nullptr) {
-              pointersToDelete.push_back(const_cast<char*>(ret.data()));
+          if constexpr (is_same_v<Args, char*>) {
+            if (ret != nullptr) {
+              pointersToDelete.push_back(const_cast<char*>(ret));
             }
           }
 
-          if constexpr (is_same_v<Args, optional<string_view>>) {
-            if (ret.value().data() != nullptr) {
-              pointersToDelete.push_back(const_cast<char*>(ret.value().data()));
+          if constexpr (is_same_v<Args, optional<char *>>) {
+            if (ret.value() != nullptr) {
+              pointersToDelete.push_back(const_cast<char*>(ret.value()));
             }
           }
           return ret;

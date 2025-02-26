@@ -48,15 +48,16 @@ struct ValidateParameterFromElisp<char*> {
       cout << "Could not retrieve string length." << endl;
       return nullptr;
     }
-    auto argument = make_unique_for_overwrite<char[]>(string_length);
+    auto argument = new char[string_length];
 
     if (!argument) {
       return argument;
     }
 
-    ret = env->copy_string_contents(env, arg, argument.get(), &string_length);
+    ret = env->copy_string_contents(env, arg, argument, &string_length);
 
     if (!ret) {
+      delete [] argument;
       return nullptr;
     }
     // This will construct a string_view over the char* array Emacs

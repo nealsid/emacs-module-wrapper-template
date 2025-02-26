@@ -1,1 +1,1 @@
-clang++ -std=c++17 -c function-traits-test.cc  -I../ -I/Applications/Emacs.app/Contents/Resources/include/
+clang++ -std=c++23 -c function-traits-test.cc  -I../ -I/Applications/Emacs.app/Contents/Resources/include/
